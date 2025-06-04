@@ -1,7 +1,8 @@
 // 错题本控制器
 package com.exam.exam_test.controller;
 
-import com.exam.exam_test.entity.*;
+import com.exam.exam_test.dto.ErrorQuestion;
+import com.exam.exam_test.dto.PracticePaper;
 import com.exam.exam_test.service.ErrorBookService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

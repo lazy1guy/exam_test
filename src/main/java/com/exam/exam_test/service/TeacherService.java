@@ -18,17 +18,15 @@ public class TeacherService {
     private final QuestionRepository questionRepository;
     private final ScoreRepository scoreRepository;
     private final AnswerRecordRepository answerRecordRepository;
-    private final UserRepository userRepository;
 
     public TeacherService(ExamRepository examRepository, HomeworkRepository homeworkRepository,
                           QuestionRepository questionRepository, ScoreRepository scoreRepository,
-                          AnswerRecordRepository answerRecordRepository, UserRepository userRepository) {
+                          AnswerRecordRepository answerRecordRepository) {
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
         this.questionRepository = questionRepository;
         this.scoreRepository = scoreRepository;
         this.answerRecordRepository = answerRecordRepository;
-        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -168,12 +166,13 @@ public class TeacherService {
     public void gradeHomework(Long homeworkId, Long studentId, List<SubjectiveGrading> gradings) {
         for (SubjectiveGrading grading : gradings) {
             // 更新答题记录
-            answerRecordRepository.findByStudentIdAndQuestionId(studentId, grading.getQuestionId())
-                    .ifPresent(record -> {
-                        record.setScore(grading.getScore());
-                        record.setIsCorrect(grading.getScore() > 0);
-                        answerRecordRepository.save(record);
-                    });
+            List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndQuestionId(studentId, grading.getQuestionId());
+            if (!records.isEmpty()) {
+                AnswerRecord record = records.get(0); // 假设每个学生对每道题只有一个记录
+                record.setScore(grading.getScore());
+                record.setIsCorrect(grading.getScore() > 0); // 假设 setCorrect 方法存在
+                answerRecordRepository.save(record);
+            }
         }
 
         // 重新计算总分

@@ -36,6 +36,7 @@ public class AnswerRecord {
     private String answer;
 
     private Boolean isCorrect;
+    private Boolean isDraft;    // 是否为草稿（对作业而言）
     private Integer score; // 该题得分
 
     @Column(columnDefinition = "TEXT")
@@ -45,10 +46,10 @@ public class AnswerRecord {
     private boolean mastered = false; // 是否已掌握
 
     @Column(nullable = false)
-    private LocalDateTime CreatedAt;
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        CreatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
     }
 }

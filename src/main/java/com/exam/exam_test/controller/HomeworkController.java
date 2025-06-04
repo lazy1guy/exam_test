@@ -1,6 +1,9 @@
 package com.exam.exam_test.controller;
 
+import com.exam.exam_test.dto.Answer;
+import com.exam.exam_test.dto.HomeworkPaper;
 import com.exam.exam_test.entity.Homework;
+import com.exam.exam_test.dto.HomeworkDetail;
 import com.exam.exam_test.service.HomeworkService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

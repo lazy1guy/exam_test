@@ -135,10 +135,35 @@ public class HomeworkService {
         scoreRepository.save(score);
     }
 
+    /**
+     * 保存作业草稿
+     *
+     * @param homeworkId 作业 ID
+     * @param studentId 学生 ID
+     * @param answers 学生的答案列表
+     */
     @Transactional
     public void saveHomeworkDraft(Long homeworkId, Long studentId, List<Answer> answers) {
-        // 保存草稿逻辑
-        // 这里简化处理，实际应用中可能需要存储草稿状态
+        // 检查是否已提交
+        if(scoreRepository.findByStudentAndHomework(studentId, homeworkId).isPresent()){
+            throw new RuntimeException("作业已提交，不能保存草稿");
+        }
+
+        // 删除旧草稿
+        answerRecordRepository.deleteDraftBySyudentAndHomework(studentId, homeworkId);
+
+        for(Answer answer : answers){
+            AnswerRecord record = new AnswerRecord();
+            record.setStudent(new User(studentId));
+            record.setQuestion(new Question(answer.getQuestionId()));
+            record.setHomework(new Homework(homeworkId));
+            record.setAnswer(answer.getAnswer());
+            record.setIsDraft(true);
+            record.setIsCorrect(null);
+            record.setScore(null);
+
+            answerRecordRepository.save(record);
+        }
     }
 
     private boolean isAutoGradeQuestion(String type) {

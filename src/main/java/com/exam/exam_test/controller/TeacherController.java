@@ -1,6 +1,7 @@
 // 教师控制器
 package com.exam.exam_test.controller;
 
+import com.exam.exam_test.dto.*;
 import com.exam.exam_test.entity.*;
 import com.exam.exam_test.service.TeacherService;
 import org.springframework.http.ResponseEntity;
@@ -56,9 +57,4 @@ public class TeacherController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/classes/{classId}/analysis")
-    public ResponseEntity<ClassAnalysis> getClassAnalysis(@PathVariable Long classId) {
-        ClassAnalysis analysis = teacherService.getClassAnalysis(classId);
-        return ResponseEntity.ok(analysis);
-    }
 }

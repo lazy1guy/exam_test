@@ -2,6 +2,8 @@
 package com.exam.exam_test.controller;
 
 import com.exam.exam_test.entity.*;
+import com.exam.exam_test.dto.AuthResponse;
+import com.exam.exam_test.dto.LoginRequest;
 import com.exam.exam_test.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,8 +37,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestParam Long userId) {
-        authService.logout(userId);
+    public ResponseEntity<Void> logout(@RequestParam Long userId,@RequestParam String accessToken) {
+        authService.logout(userId, accessToken);
         return ResponseEntity.ok().build();
     }
 }

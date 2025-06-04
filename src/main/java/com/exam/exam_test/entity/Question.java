@@ -39,4 +39,8 @@ public class Question {
     @ManyToOne
     @JoinColumn(name = "homework_id")
     private Homework homework;
+
+    public Question(Long questionId) {
+        this.id = questionId;
+    }
 }

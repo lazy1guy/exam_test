@@ -1,6 +1,9 @@
 // 个人资料控制器
 package com.exam.exam_test.controller;
 
+import com.exam.exam_test.dto.LearningStatistics;
+import com.exam.exam_test.dto.PasswordChangeRequest;
+import com.exam.exam_test.dto.UserProfile;
 import com.exam.exam_test.entity.*;
 import com.exam.exam_test.service.ProfileService;
 import org.springframework.http.ResponseEntity;
