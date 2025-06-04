@@ -1,0 +1,18 @@
+package com.exam.exam_test.dto;
+
+import com.exam.exam_test.entity.Exam;
+import com.exam.exam_test.entity.Homework;
+import com.exam.exam_test.entity.Score;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class HomeData {
+    private List<Homework> recentHomeworks; // 最近的作业列表
+    private List<Exam> recentExams; // 最近的考试列表
+    private List<Score> latestScores; // 最新的成绩列表
+}
