@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>com.exam</groupId>
-    <artifactId>exam_test</artifactId>
+    <artifactId>exam_system</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>exam_test</name>
     <description>exam_test</description>
@@ -54,6 +54,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
@@ -61,6 +62,21 @@
             <!-- 使用属性中的版本号 -->
             <version>${spring-security.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>4.4.0</version>
+        </dependency>
+
+
 
         <!-- Mockito已包含在spring-boot-starter-test中，可移除 -->
         <!--
