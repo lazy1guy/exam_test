@@ -17,6 +17,9 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +28,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExamService {
+    private static final Logger log = LoggerFactory.getLogger(ExamService.class);
+
     private final UserRepository userRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
@@ -130,9 +135,6 @@ public class ExamService {
             Map<Long, Question> questionMap = questions.stream()
                     .collect(Collectors.toMap(Question::getId, q -> q));
 
-            int totalScore = 0;
-            int maxScore = exam.getTotalScore();
-
             for (Answer answer : answers) {
                 Question question = questionMap.get(answer.getQuestionId());
                 if (question == null) continue;
@@ -148,7 +150,6 @@ public class ExamService {
                     boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
                     record.setIsCorrect(isCorrect);
                     record.setScore(isCorrect ? question.getScore() : 0);
-                    totalScore += record.getScore();
                 } else {
                     // 主观题需要教师批改
                     record.setIsCorrect(null);
@@ -160,7 +161,6 @@ public class ExamService {
 
             // 批量保存答案
             answerRecordRepository.saveAll(records);
-
             // 异步计算成绩
             asyncCalculateExamScore(examId, studentId, records, exam.getTotalScore());
         } finally {
@@ -168,25 +168,34 @@ public class ExamService {
         }
     }
 
-    // 异步成绩计算
+    // 异步计算分数
     @Async
     @Transactional
     public void asyncCalculateExamScore(Long examId, Long studentId, List<AnswerRecord> records, int totalScore) {
-        int calculatedScore = records.stream()
-                .filter(r -> r.getScore() != null)
-                .mapToInt(AnswerRecord::getScore)
-                .sum();
+        try {
+            log.info("开始计算考试成绩，examId: {}, studentId: {}", examId, studentId);
 
-        Score score = new Score();
-        score.setStudent(new User(studentId));
-        score.setExam(new Exam(examId));
-        score.setScore(calculatedScore);
-        score.setTotalScore(totalScore);
-        score.setStatus(calculatedScore >= totalScore * 0.6 ? "PASSED" : "FAILED");
-        scoreRepository.save(score);
+            int calculatedScore = records.stream()
+                    .filter(r -> r.getScore() != null)
+                    .mapToInt(AnswerRecord::getScore)
+                    .sum();
 
-        // 清除相关缓存
-        clearScoreCaches(studentId);
+            Score score = new Score();
+            score.setStudent(new User(studentId));
+            score.setExam(new Exam(examId));
+            score.setScore(calculatedScore);
+            score.setTotalScore(totalScore);
+            score.setStatus(calculatedScore >= totalScore * 0.6 ? "PASSED" : "FAILED");
+            scoreRepository.save(score);
+
+            clearScoreCaches(studentId);
+
+            log.info("考试成绩计算完成，examId: {}, studentId: {}, score: {}", examId, studentId, calculatedScore);
+        } catch (Exception e) {
+            // 记录日志并抛出自定义异常
+            log.error("Error calculating exam score for examId: {}, studentId: {}", examId, studentId, e);
+            throw new RuntimeException("成绩计算失败，请稍后重试");
+        }
     }
 
     private void clearScoreCaches(Long studentId) {

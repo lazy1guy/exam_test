@@ -21,6 +21,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long>{
     List<Exam> findByStartTimeAfter(LocalDateTime startTime);
     List<Exam> findByStartTimeBefore(LocalDateTime endTime);
 
+    // 查询当前阶段活跃的考试
     @QueryHints(value = {
             @QueryHint(name = "org.hibernate.cacheable", value = "true"),
             @QueryHint(name = "org.hibernate.cacheRegion", value = "examsCache")
@@ -28,14 +29,15 @@ public interface ExamRepository extends JpaRepository<Exam, Long>{
     @Query("SELECT e FROM Exam e WHERE e.endTime > :now AND e.startTime < :now ORDER BY e.startTime DESC")
     List<Exam> findOngoingExams(@Param("now") LocalDateTime now);
 
-    // 添加分页查询
+    // 按教师ID查询当前活跃的考试
     @Query("SELECT e FROM Exam e WHERE e.teacher.id = :teacherId AND e.endTime > :now")
     Page<Exam> findActiveExamsByTeacher(@Param("teacherId") Long teacherId, @Param("now") LocalDateTime now, Pageable pageable);
 
-    // 添加IN查询优化
+    // 获取指定id的考试
     @Query("SELECT e FROM Exam e WHERE e.id IN :ids")
     List<Exam> findByIds(@Param("ids") Set<Long> ids);
 
+    // 获取指定科目的考试
     @Query("SELECT e FROM Exam e WHERE e.subject = :subject")
     List<Exam> findSubject(@Param("subject") String subject);
 

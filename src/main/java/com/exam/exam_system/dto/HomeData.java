@@ -2,6 +2,7 @@ package com.exam.exam_system.dto;
 
 import com.exam.exam_system.entity.Exam;
 import com.exam.exam_system.entity.Homework;
+import com.exam.exam_system.entity.Notification;
 import com.exam.exam_system.entity.Score;
 import lombok.AllArgsConstructor;
 import lombok.Data;
