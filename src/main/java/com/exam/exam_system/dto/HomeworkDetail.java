@@ -4,6 +4,8 @@ import com.exam.exam_system.entity.Homework;
 import com.exam.exam_system.entity.Question;
 
 import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -13,6 +15,6 @@ public class HomeworkDetail {
     private Boolean hasSubmitted;
     private String subject;
     private String title;
-    private String startTime;
-    private String endTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 }
