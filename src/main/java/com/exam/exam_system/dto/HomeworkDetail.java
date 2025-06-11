@@ -15,5 +15,6 @@ public class HomeworkDetail {
     private Boolean hasSubmitted;
     private String subject;
     private String title;
-    private LocalDateTime deadline;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 }
