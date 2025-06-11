@@ -11,4 +11,8 @@ public class HomeworkDetail {
     private Homework homework;
     private List<Question> questions;
     private Boolean hasSubmitted;
+    private subject;
+    private title;
+    private startTime;
+    private endTime;
 }

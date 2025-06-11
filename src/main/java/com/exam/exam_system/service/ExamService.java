@@ -62,7 +62,12 @@ public class ExamService {
         }
     }
 
-    // 添加考试详情缓存
+    /**
+     * @brief 返回考试信息，包含
+     *
+     * @param examId
+     * @return
+     */
     @Cacheable(value = "examDetailCache", key = "#examId")
     public  ExamDetail getExamDetail(Long examId){
         Exam exam = examRepository.findById(examId)
@@ -71,6 +76,11 @@ public class ExamService {
         ExamDetail detail = new ExamDetail();
         detail.setExam(exam);
         detail.setQuestions(questionRepository.findByExamId(examId));
+        detail.setSubject(exam.getSubject());
+        detail.setTitle(exam.getTitle());
+        detail.setStartTime(exam.getStartTime());
+        detail.setEndTime(exam.getEndTime());
+        detail.setDuration(exam.getDuration());
 
         // 检查学生是否已参加考试
         User currentUser = getCurrentUser();
