@@ -9,10 +9,19 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, Long> {
+    @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.exam.id = :examId")
     List<AnswerRecord> findByStudentIdAndExamId(Long studentId, Long examId);
+
+    @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.homework.id = :homeworkId")
     List<AnswerRecord> findByStudentIdAndHomeworkId(Long studentId, Long homeworkId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AnswerRecord ar WHERE ar.id IN :ids")
+    void deleteByIds(@Param("ids") Set<Long> ids);
 
     @EntityGraph(attributePaths = {"question"})
     List<AnswerRecord> findByStudentIdAndIsCorrectFalse(Long studentId);
@@ -30,15 +39,19 @@ public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, Long
     @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.question.id = :questionId ORDER BY ar.createdAt DESC")
     List<AnswerRecord> findByStudentIdAndQuestionId(Long studentId, Long questionId);
 
+    @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.question.id IN :questionIds")
+    List<AnswerRecord> findByStudentIdAndQuestionIds(@Param("studentId") Long studentId, @Param("questionIds") Set<Long> questionIds);
+
     // 删除学生作业草稿
     @Transactional
     @Modifying
     @Query("DELETE FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.homework.id = :homeworkId AND ar.isDraft = true")
-    void deleteDraftBySyudentAndHomework(@Param("studentId") Long studentId,  @Param("homeworkId") Long homeworkId);
+    void deleteDraftByStudentAndHomework(@Param("studentId") Long studentId,  @Param("homeworkId") Long homeworkId);
 
     // 返回错题
     @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.isCorrect = false AND ar.question.subject = :subject")
     List<AnswerRecord> findErrorQuestionsBySubject(
             @Param("studentId") Long studentId,
             @Param("subject") String subject);
+
 }

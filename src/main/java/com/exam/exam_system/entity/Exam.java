@@ -6,7 +6,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "exams")
+@Table(name = "exams", indexes = {
+        @Index(name = "idx_exam_teacher", columnList = "teacher_id"),
+        @Index(name = "idx_exam_times", columnList = "start_time, end_time")
+})
 @Getter
 @Setter
 @NoArgsConstructor

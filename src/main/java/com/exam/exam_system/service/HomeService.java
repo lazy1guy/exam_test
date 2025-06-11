@@ -7,6 +7,8 @@ import com.exam.exam_system.repository.ExamRepository;
 import com.exam.exam_system.repository.HomeworkRepository;
 import com.exam.exam_system.repository.NotificationRepository;
 import com.exam.exam_system.repository.ScoreRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,36 +31,39 @@ public class HomeService {
         this.notificationRepository = notificationRepository;
     }
 
+    @Cacheable(value = "homeDataCache", key = "#userId", unless = "#result == null")
     public HomeData getHomeData(Long userId){
         HomeData homeData = new HomeData();
 
         //获取最近的3个作业
         List<Homework> activeHomeworks = homeworkRepository.findActiveHomeworks(LocalDateTime.now());
 
-        homeData.setRecentHomeworks(activeHomeworks.stream()
+        homeData.setRecentHomeworks(activeHomeworks.parallelStream()
                 .limit(3)
                 .collect(Collectors.toList()));
 
         // 获取最近的3个考试
         List<Exam> upcomingExams = examRepository.findOngoingExams(LocalDateTime.now());
-        homeData.setRecentExams(upcomingExams.stream()
+        homeData.setRecentExams(upcomingExams.parallelStream()
                 .limit(3)
                 .collect(Collectors.toList()));
 
         // 获取最新3个成绩
         List<Score> scores = scoreRepository.findByStudentId(userId);
         scores.sort(Comparator.comparing(Score::getCreatedAt).reversed());
-        homeData.setLatestScores(scores.stream()
+        homeData.setLatestScores(scores.parallelStream()
                 .limit(3)
                 .collect(Collectors.toList()));
 
         return homeData;
     }
 
+    @Cacheable(value = "unreadNotifications", key = "#userId")
     public List<Notification> getNotifications(Long userId) {
         return notificationRepository.findByUserIdAndReadStatusFalse(userId);
     }
 
+    @CacheEvict(value = "unreadNotifications", key = "#notification.user.id")
     public void markNotificationAsRead(Long notificationId) {
         notificationRepository.markAsRead(notificationId);
     }

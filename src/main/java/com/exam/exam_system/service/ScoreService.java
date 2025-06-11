@@ -9,6 +9,7 @@ import com.exam.exam_system.repository.UserRepository;
 import com.exam.exam_system.repository.AnswerRecordRepository;
 import com.exam.exam_system.repository.HomeworkRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +31,8 @@ public class ScoreService {
         this.userRepository = userRepository;
     }
 
+    // 添加成绩汇总缓存
+    @Cacheable(value = "scoreSummaryCache", key = "#userId")
     public ScoreSummary getScoreSummary(Long userId) {
         List<Score> scores = scoreRepository.findByStudentId(userId);
 
@@ -59,6 +62,8 @@ public class ScoreService {
         return summary;
     }
 
+    // 添加考试成绩缓存
+    @Cacheable(value = "examScoresCache", key = "#userId")
     public List<ExamScore> getExamScores(Long userId) {
         return scoreRepository.findByStudentId(userId).stream()
                 .filter(s -> s.getExam() != null)
@@ -73,6 +78,8 @@ public class ScoreService {
                 .collect(Collectors.toList());
     }
 
+    // 添加作业成绩缓存
+    @Cacheable(value = "homeworkScoresCache", key = "#userId")
     public List<HomeworkScore> getHomeworkScores(Long userId) {
         return scoreRepository.findByStudentId(userId).stream()
                 .filter(s -> s.getHomework() != null)
@@ -87,6 +94,8 @@ public class ScoreService {
                 .collect(Collectors.toList());
     }
 
+    // 添加考试详情缓存
+    @Cacheable(value = "examScoreDetailCache", key = "{#examId, #userId}")
     public ExamScoreDetail getExamScoreDetail(Long examId, Long userId) {
         Score score = scoreRepository.findByStudentAndExam(userId, examId)
                 .orElseThrow(() -> new RuntimeException("成绩不存在"));
@@ -101,6 +110,8 @@ public class ScoreService {
         return detail;
     }
 
+    // 添加作业详情缓存
+    @Cacheable(value = "homeworkScoreDetailCache", key = "{#homeworkId, #userId}")
     public HomeworkScoreDetail getHomeworkScoreDetail(Long homeworkId, Long userId) {
         Score score = scoreRepository.findByStudentAndHomework(userId, homeworkId)
                 .orElseThrow(() -> new RuntimeException("成绩不存在"));

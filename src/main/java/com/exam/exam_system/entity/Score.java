@@ -5,7 +5,11 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "scores")
+@Table(name = "score", indexes = {
+        @Index(name = "idx_score_student", columnList = "student_id"),
+        @Index(name = "idx_score_exam", columnList = "exam_id"),
+        @Index(name = "idx_score_homework", columnList = "homework_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

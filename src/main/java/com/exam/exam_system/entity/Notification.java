@@ -6,6 +6,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "notification", indexes = {
+        @Index(name = "idx_notification_user", columnList = "user_id"),
+        @Index(name = "idx_notification_read", columnList = "read_status")
+})
 @Getter
 @Setter
 @NoArgsConstructor

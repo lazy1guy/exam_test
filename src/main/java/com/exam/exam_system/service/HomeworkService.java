@@ -4,13 +4,19 @@ package com.exam.exam_system.service;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.*;
 import com.exam.exam_system.repository.*;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,16 +27,23 @@ public class HomeworkService {
     private final QuestionRepository questionRepository;
     private final AnswerRecordRepository answerRecordRepository;
     private final ScoreRepository scoreRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final CacheManager cacheManager;
 
     public HomeworkService(UserRepository userRepository, HomeworkRepository homeworkRepository, QuestionRepository questionRepository,
-                           AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository) {
+                           AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository,
+                           RedisTemplate<String, String> redisTemplate, CacheManager cacheManager) {
         this.userRepository = userRepository;
         this.homeworkRepository = homeworkRepository;
         this.questionRepository = questionRepository;
         this.answerRecordRepository = answerRecordRepository;
         this.scoreRepository = scoreRepository;
+        this.redisTemplate = redisTemplate;
+        this.cacheManager = cacheManager;
     }
 
+    // 添加作业列表缓存
+    @Cacheable(value = "homeworkListCache", key = "{#userId, #root.methodName}")
     public List<Homework> getHomeworkList(Long userId) {
         // 学生获取可做的作业，教师获取自己创建的作业
         User currentUser = getCurrentUser();
@@ -41,6 +54,8 @@ public class HomeworkService {
         }
     }
 
+    // 添加作业详情缓存
+    @Cacheable(value = "homeworkDetailCache", key = "#homeworkId")
     public HomeworkDetail getHomeworkDetail(Long homeworkId) {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new RuntimeException("作业不存在"));
@@ -83,56 +98,109 @@ public class HomeworkService {
 
     @Transactional
     public void submitHomeworkAnswers(Long homeworkId, Long studentId, List<Answer> answers) {
-        Homework homework = homeworkRepository.findById(homeworkId)
-                .orElseThrow(() -> new RuntimeException("作业不存在"));
-
-        // 检查作业是否已截止
-        LocalDateTime now = LocalDateTime.now();
-        boolean isLate = now.isAfter(homework.getDeadline());
-
-        // 保存答案并自动批改客观题
-        List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
-        Map<Long, Question> questionMap = questions.stream()
-                .collect(Collectors.toMap(Question::getId, q -> q));
-
-        int totalScore = 0;
-        int maxScore = homework.getTotalScore();
-        boolean hasSubjective = false;
-
-        for (Answer answer : answers) {
-            Question question = questionMap.get(answer.getQuestionId());
-            if (question == null) continue;
-
-            AnswerRecord record = new AnswerRecord();
-            record.setStudent(new User(studentId));
-            record.setQuestion(question);
-            record.setHomework(new Homework(homeworkId));
-            record.setAnswer(answer.getAnswer());
-
-            // 自动批改客观题
-            if (isAutoGradeQuestion(question.getType())) {
-                boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
-                record.setIsCorrect(isCorrect);
-                record.setScore(isCorrect ? question.getScore() : 0);
-                totalScore += record.getScore();
-            } else {
-                // 主观题需要教师批改
-                record.setIsCorrect(null);
-                record.setScore(null);
-                hasSubjective = true;
-            }
-
-            answerRecordRepository.save(record);
+        String submitKey = "homework:submit:" + homeworkId + ":" + studentId;
+        Boolean canSubmit = redisTemplate.opsForValue().setIfAbsent(submitKey, "processing", 5, TimeUnit.MINUTES);
+        if (Boolean.FALSE.equals(canSubmit)) {
+            throw new RuntimeException("请勿重复提交作业");
         }
 
-        // 保存成绩
+        try {
+            Homework homework = homeworkRepository.findById(homeworkId)
+                    .orElseThrow(() -> new RuntimeException("作业不存在"));
+
+            // 检查作业是否已截止
+            LocalDateTime now = LocalDateTime.now();
+
+            List<AnswerRecord> records = new ArrayList<>();
+            // 保存答案并自动批改客观题
+            List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
+            Map<Long, Question> questionMap = questions.stream()
+                    .collect(Collectors.toMap(Question::getId, q -> q));
+
+            for (Answer answer : answers) {
+                Question question = questionMap.get(answer.getQuestionId());
+                if (question == null) continue;
+
+                AnswerRecord record = new AnswerRecord();
+                record.setStudent(new User(studentId));
+                record.setQuestion(question);
+                record.setHomework(new Homework(homeworkId));
+                record.setAnswer(answer.getAnswer());
+
+                records.add(record);
+            }
+
+            answerRecordRepository.saveAll(records);
+
+            // 异步处理成绩
+            asyncProcessHomeworkScore(homeworkId, studentId, records, homework.getTotalScore(), homework.getDeadline());
+        }   finally {
+            redisTemplate.delete(submitKey);
+        }
+    }
+    // 异步处理作业成绩
+    @Async
+    @Transactional
+    public void asyncProcessHomeworkScore(Long homeworkId, Long studentId, List<AnswerRecord> records, int totalScore, LocalDateTime deadline) {
+        int calculatedScore = records.stream()
+                .filter(r -> r.getScore() != null)
+                .mapToInt(AnswerRecord::getScore)
+                .sum();
+
+        boolean hasSubjective = records.stream()
+                .anyMatch(r -> r.getScore() == null);
+
+        boolean isLate = LocalDateTime.now().isAfter(deadline);
+
         Score score = new Score();
         score.setStudent(new User(studentId));
         score.setHomework(new Homework(homeworkId));
-        score.setScore(totalScore);
-        score.setTotalScore(maxScore);
+        score.setScore(calculatedScore);
+        score.setTotalScore(totalScore);
         score.setStatus(isLate ? "LATE" : hasSubjective ? "SUBMITTED" : "COMPLETED");
         scoreRepository.save(score);
+
+        // 清除相关缓存
+        clearHomeworkCaches(studentId);
+    }
+
+    private void clearHomeworkCaches(Long studentId) {
+        // 清除首页数据缓存
+        Cache homeDataCache = cacheManager.getCache("homeDataCache");
+        if (homeDataCache != null) {
+            homeDataCache.evict(studentId);
+        }
+
+        // 清除作业列表缓存
+        Cache homeworkListCache = cacheManager.getCache("homeworkListCache");
+        if (homeworkListCache != null) {
+            homeworkListCache.evict(studentId);
+        }
+
+        // 清除作业详情缓存
+        Cache homeworkDetailCache = cacheManager.getCache("homeworkDetailCache");
+        if (homeworkDetailCache != null) {
+            homeworkDetailCache.evict(studentId);
+        }
+
+        // 清除作业成绩列表缓存
+        Cache homeworkScoresCache = cacheManager.getCache("homeworkScoresCache");
+        if (homeworkScoresCache != null) {
+            homeworkScoresCache.evict(studentId);
+        }
+
+        // 清除作业详情成绩缓存
+        // 使用模式匹配清除该学生所有作业的成绩详情缓存
+        Set<String> homeworkDetailKeys = redisTemplate.keys("homeworkScoreDetailCache::" + studentId + ":*");
+        if (homeworkDetailKeys != null && !homeworkDetailKeys.isEmpty()) {
+            redisTemplate.delete(homeworkDetailKeys);
+        }
+
+        // 清除最近作业缓存（首页使用）
+        Cache recentHomeworksCache = cacheManager.getCache("recentHomeworksCache");
+        if (recentHomeworksCache != null) {
+            recentHomeworksCache.evict(studentId);
+        }
     }
 
     /**
@@ -150,7 +218,7 @@ public class HomeworkService {
         }
 
         // 删除旧草稿
-        answerRecordRepository.deleteDraftBySyudentAndHomework(studentId, homeworkId);
+        answerRecordRepository.deleteDraftByStudentAndHomework(studentId, homeworkId);
 
         for(Answer answer : answers){
             AnswerRecord record = new AnswerRecord();

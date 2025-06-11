@@ -1,19 +1,41 @@
 package com.exam.exam_system.repository;
 
 import com.exam.exam_system.entity.Homework;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface HomeworkRepository extends JpaRepository<Homework, Long> {
+
+    // 添加分页支持
+    Page<Homework> findByTeacherId(Long teacherId, Pageable pageable);
+
     List<Homework> findByTeacherId(Long teacherId);
     List<Homework> findByDeadlineAfter(LocalDateTime deadline);
 
-    @Query("SELECT h FROM Homework h WHERE h.deadline > :now")
+    // 添加缓存提示
+    @QueryHints(value = {
+            @QueryHint(name = "org.hibernate.cacheable", value = "true"),
+            @QueryHint(name = "org.hibernate.cacheRegion", value = "homeworksCache")
+    })
+    @Query("SELECT h FROM Homework h WHERE h.deadline > :now ORDER BY h.deadline ASC")
     List<Homework> findActiveHomeworks(@Param("now") LocalDateTime now);
+
+    // 添加分页查询
+    @Query("SELECT h FROM Homework h WHERE h.teacher.id = :teacherId AND h.deadline > :now")
+    Page<Homework> findActiveHomeworksByTeacher(@Param("teacherId") Long teacherId, @Param("now") LocalDateTime now, Pageable pageable);
 
     @Query("SELECT h FROM Homework h WHERE h.subject = :subject")
     List<Homework> findBySubject(@Param("subject") String subject);
+
+    // 添加IN查询优化
+    @Query("SELECT h FROM Homework h WHERE h.id IN :ids")
+    List<Homework> findByIds(@Param("ids") Set<Long> ids);
 }

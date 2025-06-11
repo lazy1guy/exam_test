@@ -11,10 +11,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,15 +30,23 @@ public class ExamService {
     private final QuestionRepository questionRepository;
     private final AnswerRecordRepository answerRecordRepository;
     private final ScoreRepository scoreRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final CacheManager cacheManager;
 
-    public ExamService(UserRepository userRepository, ExamRepository examRepository, QuestionRepository questionRepository, AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository){
+    public ExamService(UserRepository userRepository, ExamRepository examRepository, QuestionRepository questionRepository,
+                       AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository,
+                       RedisTemplate<String, String> redisTemplate, CacheManager cacheManager){
         this.userRepository = userRepository;
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.answerRecordRepository = answerRecordRepository;
         this.scoreRepository = scoreRepository;
+        this.redisTemplate = redisTemplate;
+        this.cacheManager = cacheManager;
     }
 
+    // 添加考试列表缓存
+    @Cacheable(value = "examListCache", key = "{#userId, #root.methodName}")
     public List<Exam> getExamList(Long userId){
         //学生获取可参加的考试，教师获取自己创建的考试
         User currentUser = getCurrentUser();
@@ -43,6 +57,8 @@ public class ExamService {
         }
     }
 
+    // 添加考试详情缓存
+    @Cacheable(value = "examDetailCache", key = "#examId")
     public  ExamDetail getExamDetail(Long examId){
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(()->new RuntimeException("考试不存在"));
@@ -91,56 +107,125 @@ public class ExamService {
 
     @Transactional
     public void submitExamAnswers(Long examId, Long studentId, List<Answer> answers) {
-        Exam exam = examRepository.findById(examId)
-                .orElseThrow(() -> new RuntimeException("考试不存在"));
-
-        // 检查考试是否已结束
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(exam.getEndTime())) {
-            throw new RuntimeException("考试已结束");
+        // 幂等性检查
+        String submitKey = "exam:submit:" + examId + ":" + studentId;
+        Boolean canSubmit = redisTemplate.opsForValue().setIfAbsent(submitKey, "processing", 5, TimeUnit.MINUTES);
+        if (Boolean.FALSE.equals(canSubmit)) {
+            throw new RuntimeException("请勿重复提交考试");
         }
 
-        // 保存答案并自动批改客观题
-        List<Question> questions = questionRepository.findByExamId(examId);
-        Map<Long, Question> questionMap = questions.stream()
-                .collect(Collectors.toMap(Question::getId, q -> q));
+        try {
+            Exam exam = examRepository.findById(examId)
+                    .orElseThrow(() -> new RuntimeException("考试不存在"));
 
-        int totalScore = 0;
-        int maxScore = exam.getTotalScore();
-
-        for (Answer answer : answers) {
-            Question question = questionMap.get(answer.getQuestionId());
-            if (question == null) continue;
-
-            AnswerRecord record = new AnswerRecord();
-            record.setStudent(new User(studentId));
-            record.setQuestion(question);
-            record.setExam(new Exam(examId));
-            record.setAnswer(answer.getAnswer());
-
-            // 自动批改客观题
-            if (isAutoGradeQuestion(question.getType())) {
-                boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
-                record.setIsCorrect(isCorrect);
-                record.setScore(isCorrect ? question.getScore() : 0);
-                totalScore += record.getScore();
-            } else {
-                // 主观题需要教师批改
-                record.setIsCorrect(null);
-                record.setScore(null);
+            // 检查考试是否已结束
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isAfter(exam.getEndTime())) {
+                throw new RuntimeException("考试已结束");
             }
 
-            answerRecordRepository.save(record);
-        }
+            // 批量保存答案记录并自动批改客观题
+            List<AnswerRecord> records = new ArrayList<>();
+            List<Question> questions = questionRepository.findByExamId(examId);
+            Map<Long, Question> questionMap = questions.stream()
+                    .collect(Collectors.toMap(Question::getId, q -> q));
 
-        // 保存成绩
+            int totalScore = 0;
+            int maxScore = exam.getTotalScore();
+
+            for (Answer answer : answers) {
+                Question question = questionMap.get(answer.getQuestionId());
+                if (question == null) continue;
+
+                AnswerRecord record = new AnswerRecord();
+                record.setStudent(new User(studentId));
+                record.setQuestion(question);
+                record.setExam(new Exam(examId));
+                record.setAnswer(answer.getAnswer());
+
+                // 自动批改客观题
+                if (isAutoGradeQuestion(question.getType())) {
+                    boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
+                    record.setIsCorrect(isCorrect);
+                    record.setScore(isCorrect ? question.getScore() : 0);
+                    totalScore += record.getScore();
+                } else {
+                    // 主观题需要教师批改
+                    record.setIsCorrect(null);
+                    record.setScore(null);
+                }
+
+                records.add(record);
+            }
+
+            // 批量保存答案
+            answerRecordRepository.saveAll(records);
+
+            // 异步计算成绩
+            asyncCalculateExamScore(examId, studentId, records, exam.getTotalScore());
+        } finally {
+            redisTemplate.delete(submitKey);
+        }
+    }
+
+    // 异步成绩计算
+    @Async
+    @Transactional
+    public void asyncCalculateExamScore(Long examId, Long studentId, List<AnswerRecord> records, int totalScore) {
+        int calculatedScore = records.stream()
+                .filter(r -> r.getScore() != null)
+                .mapToInt(AnswerRecord::getScore)
+                .sum();
+
         Score score = new Score();
         score.setStudent(new User(studentId));
         score.setExam(new Exam(examId));
-        score.setScore(totalScore);
-        score.setTotalScore(maxScore);
-        score.setStatus(totalScore >= maxScore * 0.6 ? "PASSED" : "FAILED");
+        score.setScore(calculatedScore);
+        score.setTotalScore(totalScore);
+        score.setStatus(calculatedScore >= totalScore * 0.6 ? "PASSED" : "FAILED");
         scoreRepository.save(score);
+
+        // 清除相关缓存
+        clearScoreCaches(studentId);
+    }
+
+    private void clearScoreCaches(Long studentId) {
+        // 清除首页数据缓存
+        Cache homeDataCache = cacheManager.getCache("homeDataCache");
+        if (homeDataCache != null) {
+            homeDataCache.evict(studentId);
+        }
+
+        // 清除成绩汇总缓存
+        Cache scoreSummaryCache = cacheManager.getCache("scoreSummaryCache");
+        if (scoreSummaryCache != null) {
+            scoreSummaryCache.evict(studentId);
+        }
+
+        // 清除考试成绩列表缓存
+        Cache examScoresCache = cacheManager.getCache("examScoresCache");
+        if (examScoresCache != null) {
+            examScoresCache.evict(studentId);
+        }
+
+        // 清除考试详情成绩缓存
+        // 注意：这里使用模式匹配清除该学生所有考试的成绩详情缓存
+        Set<String> examDetailKeys = redisTemplate.keys("examScoreDetailCache::" + studentId + ":*");
+        if (examDetailKeys != null && !examDetailKeys.isEmpty()) {
+            redisTemplate.delete(examDetailKeys);
+        }
+
+        // 清除最近成绩缓存（首页使用）
+        Cache latestScoresCache = cacheManager.getCache("latestScoresCache");
+        if (latestScoresCache != null) {
+            latestScoresCache.evict(studentId);
+        }
+
+        // 清除未读通知缓存
+        Cache notificationsCache = cacheManager.getCache("unreadNotifications");
+        if (notificationsCache != null) {
+            notificationsCache.evict(studentId);
+        }
     }
 
     public long getTimeRemaining(Long examId, Long studentId) {
