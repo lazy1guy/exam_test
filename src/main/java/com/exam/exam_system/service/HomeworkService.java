@@ -65,8 +65,7 @@ public class HomeworkService {
         detail.setQuestions(questionRepository.findByHomeworkId(homeworkId));
         detail.setSubject(homework.getSubject());
         detail.setTitle(homework.getTitle());
-        detail.setStartTime(homework.getStartTime());
-        detail.setEndTime(homework.getEndTime());
+        detail.setDeadline(homework.getDeadline());
 
         // 检查学生是否已提交作业
         User currentUser = getCurrentUser();

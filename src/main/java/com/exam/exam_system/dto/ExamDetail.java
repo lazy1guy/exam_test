@@ -14,8 +14,8 @@ public class ExamDetail {
     private Boolean hasTaken;
     private Exam exam;
     private List<Question> questions;
-    private string subject;
-    private string title;
+    private String subject;
+    private String title;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Integer duration; //考试时间（分钟）
