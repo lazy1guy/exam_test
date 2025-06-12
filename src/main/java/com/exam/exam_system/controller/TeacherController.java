@@ -4,6 +4,9 @@ package com.exam.exam_system.controller;
 import com.exam.exam_system.dto.*;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.service.TeacherService;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,6 +45,35 @@ public class TeacherController {
         HomeworkResults results = teacherService.getHomeworkResults(homeworkId);
         return ResponseEntity.ok(results);
     }
+
+    // 导出考试结果为 Excel 文件
+    @GetMapping("/exams/{examId}/export")
+    public ResponseEntity<InputStreamResource> exportExamResults(@PathVariable Long examId) {
+        byte[] excelData = teacherService.exportExamResults(examId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=exam_results.xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new InputStreamResource(new java.io.ByteArrayInputStream(excelData)));
+    }
+
+    // 导出作业结果为 Excel 文件
+    @GetMapping("/homeworks/{homeworkId}/export")
+    public ResponseEntity<InputStreamResource> exportHomeworkResults(@PathVariable Long homeworkId) {
+        byte[] excelData = teacherService.exportHomeworkResults(homeworkId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=homework_results.xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new InputStreamResource(new java.io.ByteArrayInputStream(excelData)));
+    }
+
 
     @PostMapping("/homeworks/{homeworkId}/grade")
     public ResponseEntity<Void> gradeHomework(@PathVariable Long homeworkId,

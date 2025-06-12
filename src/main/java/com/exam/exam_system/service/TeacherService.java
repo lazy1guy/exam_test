@@ -4,9 +4,17 @@ package com.exam.exam_system.service;
 import com.exam.exam_system.dto.*;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.repository.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -92,19 +100,20 @@ public class TeacherService {
         ExamResults results = new ExamResults();
         results.setExam(exam);
 
-        // 计算平均分
-        double avgScore = scores.stream()
-                .mapToInt(Score::getScore)
-                .average()
-                .orElse(0.0);
-        results.setAvgScore(avgScore);
+        // 计算统计信息
+        double avgScore = calculateAverageScore(scores);
+        double passRate = calculatePassRate(scores);
+        int maxScore = calculateMaxScore(scores);
+        int minScore = calculateMinScore(scores);
+        Map<Long, Double> questionAvgScores = calculateQuestionAvgScores(scores, exam.getQuestions(), examId, "exam");
+        Map<String, Long> scoreDistribution = calculateScoreDistribution(scores);
 
-        // 计算及格率
-        long passedCount = scores.stream()
-                .filter(s -> "PASSED".equals(s.getStatus()))
-                .count();
-        double passRate = scores.isEmpty() ? 0.0 : (double) passedCount / scores.size();
+        results.setAvgScore(avgScore);
         results.setPassRate(passRate);
+        results.setMaxScore(maxScore);
+        results.setMinScore(minScore);
+        results.setQuestionAvgScores(questionAvgScores);
+        results.setScoreDistribution(scoreDistribution);
 
         // 学生成绩列表
         List<StudentScore> studentScores = scores.stream()
@@ -131,19 +140,20 @@ public class TeacherService {
         HomeworkResults results = new HomeworkResults();
         results.setHomework(homework);
 
-        // 计算平均分
-        double avgScore = scores.stream()
-                .mapToInt(Score::getScore)
-                .average()
-                .orElse(0.0);
-        results.setAvgScore(avgScore);
+        // 计算统计信息
+        double avgScore = calculateAverageScore(scores);
+        double completionRate = calculateCompletionRate(scores);
+        int maxScore = calculateMaxScore(scores);
+        int minScore = calculateMinScore(scores);
+        Map<Long, Double> questionAvgScores = calculateQuestionAvgScores(scores, homework.getQuestions(), homeworkId, "homework");
+        Map<String, Long> scoreDistribution = calculateScoreDistribution(scores);
 
-        // 计算完成率
-        long completedCount = scores.stream()
-                .filter(s -> !"LATE".equals(s.getStatus()))
-                .count();
-        double completionRate = scores.isEmpty() ? 0.0 : (double) completedCount / scores.size();
+        results.setAvgScore(avgScore);
         results.setCompletionRate(completionRate);
+        results.setMaxScore(maxScore);
+        results.setMinScore(minScore);
+        results.setQuestionAvgScores(questionAvgScores);
+        results.setScoreDistribution(scoreDistribution);
 
         // 学生成绩列表
         List<StudentScore> studentScores = scores.stream()
@@ -162,15 +172,163 @@ public class TeacherService {
         return results;
     }
 
+    // 导出考试结果为 Excel 文件
+    public byte[] exportExamResults(Long examId) {
+        ExamResults results = getExamResults(examId);
+        return generateExcel(results);
+    }
+
+    // 导出作业结果为 Excel 文件
+    public byte[] exportHomeworkResults(Long homeworkId) {
+        HomeworkResults results = getHomeworkResults(homeworkId);
+        return generateExcel(results);
+    }
+
+    private double calculateAverageScore(List<Score> scores) {
+        return scores.stream()
+                .mapToInt(Score::getScore)
+                .average()
+                .orElse(0.0);
+    }
+
+    private double calculatePassRate(List<Score> scores) {
+        long passedCount = scores.stream()
+                .filter(s -> "PASSED".equals(s.getStatus()))
+                .count();
+        return scores.isEmpty() ? 0.0 : (double) passedCount / scores.size();
+    }
+
+    private double calculateCompletionRate(List<Score> scores) {
+        long completedCount = scores.stream()
+                .filter(s -> !"LATE".equals(s.getStatus()))
+                .count();
+        return scores.isEmpty() ? 0.0 : (double) completedCount / scores.size();
+    }
+
+    private int calculateMaxScore(List<Score> scores) {
+        return scores.stream()
+                .mapToInt(Score::getScore)
+                .max()
+                .orElse(0);
+    }
+
+    private int calculateMinScore(List<Score> scores) {
+        return scores.stream()
+                .mapToInt(Score::getScore)
+                .min()
+                .orElse(0);
+    }
+
+    private Map<Long, Double> calculateQuestionAvgScores(List<Score> scores, List<Question> questions, Long examOrHomeworkId, String type) {
+        // 获取所有学生的答题记录
+        List<AnswerRecord> answerRecords;
+        if ("exam".equals(type)) {
+            answerRecords = answerRecordRepository.findByExamId(examOrHomeworkId);
+        } else {
+            answerRecords = answerRecordRepository.findByHomeworkId(examOrHomeworkId);
+        }
+
+        // 构建问题 ID 和平均分的映射
+        Map<Long, Double> questionAvgScores = new HashMap<>();
+
+        for (Question question : questions) {
+            long questionId = question.getId();
+
+            // 过滤出与当前问题相关的答题记录，并计算平均分
+            double avgScore = answerRecords.stream()
+                    .filter(record -> record.getQuestion().getId().equals(questionId))
+                    .mapToInt(AnswerRecord::getScore)
+                    .average()
+                    .orElse(0.0);
+
+            // 将问题 ID 和平均分存入映射
+            questionAvgScores.put(questionId, avgScore);
+        }
+
+        return questionAvgScores;
+
+    }
+
+
+    private Map<String, Long> calculateScoreDistribution(List<Score> scores) {
+        Map<String, Long> distribution = new HashMap<>();
+        distribution.put("0-59", 0L);
+        distribution.put("60-69", 0L);
+        distribution.put("70-79", 0L);
+        distribution.put("80-89", 0L);
+        distribution.put("90-100", 0L);
+
+        for (Score score : scores) {
+            int scoreValue = score.getScore();
+            if (scoreValue >= 0 && scoreValue <= 59) {
+                distribution.put("0-59", distribution.get("0-59") + 1);
+            } else if (scoreValue >= 60 && scoreValue <= 69) {
+                distribution.put("60-69", distribution.get("60-69") + 1);
+            } else if (scoreValue >= 70 && scoreValue <= 79) {
+                distribution.put("70-79", distribution.get("70-79") + 1);
+            } else if (scoreValue >= 80 && scoreValue <= 89) {
+                distribution.put("80-89", distribution.get("80-89") + 1);
+            } else if (scoreValue >= 90 && scoreValue <= 100) {
+                distribution.put("90-100", distribution.get("90-100") + 1);
+            }
+        }
+        return distribution;
+    }
+
+    private byte[] generateExcel(Object results) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Results");
+
+            // 创建表头
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"学生ID", "学生姓名", "得分", "总分"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            // 填充数据
+            if (results instanceof ExamResults) {
+                ExamResults examResults = (ExamResults) results;
+                int rowNum = 1;
+                for (StudentScore score : examResults.getStudentScores()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(score.getStudentId());
+                    row.createCell(1).setCellValue(score.getStudentName());
+                    row.createCell(2).setCellValue(score.getScore());
+                    row.createCell(3).setCellValue(score.getTotalScore());
+                }
+            } else if (results instanceof HomeworkResults) {
+                HomeworkResults homeworkResults = (HomeworkResults) results;
+                int rowNum = 1;
+                for (StudentScore score : homeworkResults.getStudentScores()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(score.getStudentId());
+                    row.createCell(1).setCellValue(score.getStudentName());
+                    row.createCell(2).setCellValue(score.getScore());
+                    row.createCell(3).setCellValue(score.getTotalScore());
+                }
+            }
+
+            // 写入字节数组
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("导出失败", e);
+        }
+    }
+
+
     @Transactional
     public void gradeHomework(Long homeworkId, Long studentId, List<SubjectiveGrading> gradings) {
         for (SubjectiveGrading grading : gradings) {
             // 更新答题记录
             List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndQuestionId(studentId, grading.getQuestionId());
             if (!records.isEmpty()) {
-                AnswerRecord record = records.get(0); // 假设每个学生对每道题只有一个记录
+                AnswerRecord record = records.get(0);
                 record.setScore(grading.getScore());
-                record.setIsCorrect(grading.getScore() > 0); // 假设 setCorrect 方法存在
+                record.setIsCorrect(grading.getScore() > 0);
                 answerRecordRepository.save(record);
             }
         }

@@ -18,6 +18,12 @@ public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, Long
     @Query("SELECT ar FROM AnswerRecord ar WHERE ar.student.id = :studentId AND ar.homework.id = :homeworkId")
     List<AnswerRecord> findByStudentIdAndHomeworkId(Long studentId, Long homeworkId);
 
+    @Query("SELECT ar FROM AnswerRecord ar WHERE ar.exam.id = :examId")
+    List<AnswerRecord> findByExamId(Long examId);
+
+    @Query("SELECT ar FROM AnswerRecord ar WHERE ar.homework.id = :homeworkId")
+    List<AnswerRecord> findByHomeworkId(Long homeworkId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM AnswerRecord ar WHERE ar.id IN :ids")

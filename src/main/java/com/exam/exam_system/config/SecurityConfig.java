@@ -61,13 +61,15 @@ public class SecurityConfig {
                         // 学生和教师角色可以访问的路径
                         .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT") // 作业相关接口
                         .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT") // 考试相关接口
-                        .requestMatchers("/api/answers/**").hasRole("STUDENT") // 学生提交的答案
                         .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT") // 成绩相关接口
                         .requestMatchers("/api/error-book/**").hasRole("STUDENT") // 错题本相关接口
                         .requestMatchers("/api/profile/**").authenticated() // 个人资料相关接口
 
                         // 教师专属路径
                         .requestMatchers("/api/teacher/**").hasRole("TEACHER") // 教师管理功能
+
+                        // 管理员专属路径
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // 管理员管理功能
 
                         // 首页公开数据
                         .requestMatchers("/api/home/**").permitAll()
