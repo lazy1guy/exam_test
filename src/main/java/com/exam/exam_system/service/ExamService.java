@@ -62,12 +62,7 @@ public class ExamService {
         }
     }
 
-    /**
-     * @brief 返回考试信息，包含
-     *
-     * @param examId
-     * @return
-     */
+
     @Cacheable(value = "examDetailCache", key = "#examId")
     public  ExamDetail getExamDetail(Long examId){
         Exam exam = examRepository.findById(examId)

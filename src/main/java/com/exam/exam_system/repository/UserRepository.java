@@ -31,7 +31,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id IN :ids")
     List<User> findByIds(@Param("ids") Set<Long> ids);
 
-    @Query(value = "SELECT /*+ INDEX(u idx_username) */ u FROM User u WHERE u.username = :username")
+    @Query(value = "SELECT * FROM users u USE INDEX (idx_username) WHERE u.username = :username", nativeQuery = true)
     Optional<User> findByUsernameWithIndexHint(@Param("username") String username);
 
     Optional<User> findByEmail(String email);
