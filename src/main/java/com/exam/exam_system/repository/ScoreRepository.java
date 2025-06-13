@@ -4,8 +4,10 @@ import com.exam.exam_system.entity.Score;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,4 +49,19 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     Optional<Score> findByStudentAndHomework(
             @Param("studentId") Long studentId,
             @Param("homeworkId") Long homeworkId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Score s WHERE s.student.id = :studentId")
+    void deleteByStudentId(@Param("studentId") Long studentId);
+
+    // 通过 examId删除
+    @Modifying
+    @Query("DELETE FROM Score s WHERE s.exam.id = :examId")
+    void deleteByExamId(@Param("examId") Long examId);
+
+    // 通过homeworkId删除
+    @Modifying
+    @Query("DELETE FROM Score s WHERE s.homework.id = :homeworkId")
+    void deleteByHomeworkId(@Param("homeworkId") Long homeworkId);
 }

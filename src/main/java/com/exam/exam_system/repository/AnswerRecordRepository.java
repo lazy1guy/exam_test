@@ -60,4 +60,9 @@ public interface AnswerRecordRepository extends JpaRepository<AnswerRecord, Long
             @Param("studentId") Long studentId,
             @Param("subject") String subject);
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AnswerRecord ar WHERE ar.student.id = :studentId")
+    void deleteByStudentId(@Param("studentId") Long studentId);
+
 }

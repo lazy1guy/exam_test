@@ -30,7 +30,7 @@ public class Exam {
     private String subject; // 科目
 
     @ManyToOne
-    @JoinColumn(name = "teacher_id", nullable = false)
+    @JoinColumn(name = "teacher_id", nullable = true)
     private User teacher;
 
     @Column(nullable = false)

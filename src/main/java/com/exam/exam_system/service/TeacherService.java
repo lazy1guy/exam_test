@@ -356,4 +356,35 @@ public class TeacherService {
         examRepository.save(exam);
     }
 
+    @Transactional
+    public void deleteExam(Long examId) {
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new RuntimeException("考试不存在"));
+
+        // 修改相关联试题的考试信息
+        questionRepository.deleteByExamId(examId);
+
+        // 删除相关联的成绩
+        scoreRepository.deleteByExamId(examId);
+
+        // 删除考试本身
+        examRepository.delete(exam);
+    }
+
+    @Transactional
+    public void deleteHomework(Long homeworkId) {
+        Homework homework = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new RuntimeException("作业不存在"));
+
+        // 修改相关联试题的作业信息
+        questionRepository.deleteByHomeworkId(homeworkId);
+
+        // 删除相关联的成绩
+        scoreRepository.deleteByHomeworkId(homeworkId);
+
+        // 删除作业本身
+        homeworkRepository.delete(homework);
+    }
+
+
 }
