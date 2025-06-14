@@ -89,4 +89,18 @@ public class TeacherController {
         return ResponseEntity.ok().build();
     }
 
+
+    @DeleteMapping("/exams/{examId}")
+    public ResponseEntity<Void> deleteExam(@PathVariable Long examId) {
+        teacherService.deleteExam(examId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/homeworks/{homeworkId}")
+    public ResponseEntity<Void> deleteHomework(@PathVariable Long homeworkId) {
+        teacherService.deleteHomework(homeworkId);
+        return ResponseEntity.ok().build();
+    }
+
+
 }
