@@ -9,14 +9,15 @@ import java.util.Set;
 
 @Service
 public class TokenBlacklistService {
-
     private final Set<String> blacklistedTokens = Collections.synchronizedSet(new HashSet<>());
 
     public void blacklistToken(String token) {
-        blacklistedTokens.add(token);
+        if (token != null && !token.isBlank()) {  // 忽略空 Token
+            blacklistedTokens.add(token);
+        }
     }
 
     public boolean isTokenBlacklisted(String token) {
-        return blacklistedTokens.contains(token);
+        return token != null && !token.isBlank() && blacklistedTokens.contains(token);
     }
 }

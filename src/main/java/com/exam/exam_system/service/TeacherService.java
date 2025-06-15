@@ -288,8 +288,7 @@ public class TeacherService {
             }
 
             // 填充数据
-            if (results instanceof ExamResults) {
-                ExamResults examResults = (ExamResults) results;
+            if (results instanceof ExamResults examResults) {
                 int rowNum = 1;
                 for (StudentScore score : examResults.getStudentScores()) {
                     Row row = sheet.createRow(rowNum++);
@@ -298,8 +297,7 @@ public class TeacherService {
                     row.createCell(2).setCellValue(score.getScore());
                     row.createCell(3).setCellValue(score.getTotalScore());
                 }
-            } else if (results instanceof HomeworkResults) {
-                HomeworkResults homeworkResults = (HomeworkResults) results;
+            } else if (results instanceof HomeworkResults homeworkResults) {
                 int rowNum = 1;
                 for (StudentScore score : homeworkResults.getStudentScores()) {
                     Row row = sheet.createRow(rowNum++);
@@ -385,6 +383,4 @@ public class TeacherService {
         // 删除作业本身
         homeworkRepository.delete(homework);
     }
-
-
 }

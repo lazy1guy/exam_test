@@ -17,6 +17,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
@@ -24,6 +25,13 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/api/auth/",
+            "/api/homeworks/active",
+            "/api/exams/upcoming",
+            "/api/exams/past"
+    );
 
     public JwtTokenFilter(JwtTokenProvider tokenProvider,
                           CustomUserDetailsService userDetailsService,
@@ -38,6 +46,13 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
+
+        // 跳过公开路径（无需认证的接口）
+        String path = request.getRequestURI();
+        if (PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String token = getTokenFromRequest(request);
 
