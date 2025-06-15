@@ -8,12 +8,14 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/teacher")
+@PreAuthorize("hasRole('TEACHER')") // 类级别角色校验
 public class TeacherController {
 
     private final TeacherService teacherService;

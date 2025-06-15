@@ -4,16 +4,24 @@ import com.exam.exam_system.service.CustomUserDetailsService;
 import com.exam.exam_system.security.JwtAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // 使用新的注解
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -44,41 +52,69 @@ public class SecurityConfig {
         return builder.build();
     }
 
+    // 关键修复：添加 CORS 配置
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*")); // 允许所有来源
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Collections.singletonList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L); // 1小时缓存
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.disable())
-                .csrf(csrf -> csrf.disable())
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 启用并配置 CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // 禁用 CSRF（保持原样）
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // 异常处理
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(unauthorizedHandler)
+                )
+
+                // 无状态会话
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 授权配置
                 .authorizeHttpRequests(auth -> auth
+                        // 放行 OPTIONS 请求
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // 公开访问的路径
-                        .requestMatchers("/api/auth/**").permitAll() // 认证相关接口
-                        .requestMatchers("/api/homeworks/active").permitAll() // 公开的作业信息
-                        .requestMatchers("/api/exams/upcoming").permitAll() // 即将到来的考试
-                        .requestMatchers("/api/exams/past").permitAll() // 已结束的考试
-
-                        // 学生和教师角色可以访问的路径
-                        .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT") // 作业相关接口
-                        .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT") // 考试相关接口
-                        .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT") // 成绩相关接口
-                        .requestMatchers("/api/error-book/**").hasRole("STUDENT") // 错题本相关接口
-                        .requestMatchers("/api/profile/**").authenticated() // 个人资料相关接口
-
-                        // 教师专属路径
-                        .requestMatchers("/api/teacher/**").hasRole("TEACHER") // 教师管理功能
-
-                        // 管理员专属路径
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // 管理员管理功能
-
-                        // 首页公开数据
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/homeworks/active").permitAll()
+                        .requestMatchers("/api/exams/upcoming").permitAll()
+                        .requestMatchers("/api/exams/past").permitAll()
                         .requestMatchers("/api/home/**").permitAll()
 
-                        // 默认规则：所有其他请求需要认证
-                        .anyRequest().authenticated()
+                        // 角色访问控制
+                        .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT")
+                        .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT")
+                        .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT")
+                        .requestMatchers("/api/error-book/**").hasRole("STUDENT")
+                        .requestMatchers("/api/profile/**").authenticated()
+                        .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+                        // 默认规则
+                        .anyRequest().authenticated()
                 )
+
+                // 添加 JWT 过滤器
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+
                 .build();
     }
 }

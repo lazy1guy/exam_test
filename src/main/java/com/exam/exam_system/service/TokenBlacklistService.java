@@ -12,12 +12,16 @@ public class TokenBlacklistService {
     private final Set<String> blacklistedTokens = Collections.synchronizedSet(new HashSet<>());
 
     public void blacklistToken(String token) {
-        if (token != null && !token.isBlank()) {  // 忽略空 Token
+        if (token != null && !token.isBlank()) {
             blacklistedTokens.add(token);
         }
     }
 
     public boolean isTokenBlacklisted(String token) {
-        return token != null && !token.isBlank() && blacklistedTokens.contains(token);
+        // 关键：空Token不视为黑名单
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        return blacklistedTokens.contains(token);
     }
 }
