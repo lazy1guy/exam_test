@@ -48,7 +48,7 @@ public class JwtTokenProvider {
         return JWT.create()
                 .withClaim("id", user.getId())
                 .withClaim("username", user.getUsername())
-                .withClaim("role", user.getRole())
+                .withClaim("role", "ROLE_" + user.getRole())
                 .withSubject(user.getUsername())
                 .withIssuedAt(now)
                 .withExpiresAt(expiryDate)
