@@ -4,6 +4,8 @@ package com.exam.exam_system.entity;
 import lombok.*;
 import jakarta.persistence.*;
 
+import java.io.Serializable;
+
 @Entity
 @Table(name = "question", indexes = {
         @Index(name = "idx_question_exam", columnList = "exam_id"),
@@ -13,7 +15,10 @@ import jakarta.persistence.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Question {
+public class Question implements Serializable
+{
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -5,11 +5,15 @@ import com.exam.exam_system.entity.Question;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class HomeworkDetail {
+public class HomeworkDetail implements Serializable
+{
+    private static final long serialVersionUID = 1L;
+
     private Homework homework;
     private List<Question> questions;
     private Boolean hasSubmitted;
