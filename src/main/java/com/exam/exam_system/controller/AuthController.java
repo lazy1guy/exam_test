@@ -7,6 +7,8 @@ import com.exam.exam_system.dto.AuthResponse;
 import com.exam.exam_system.dto.LoginRequest;
 import com.exam.exam_system.service.AuthService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -41,5 +43,13 @@ public class AuthController {
     public ResponseEntity<Void> logout(@RequestParam Long userId,@RequestParam String accessToken) {
         authService.logout(userId, accessToken);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/current-user")
+    public ResponseEntity<UserDTO> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        UserDTO userDTO = authService.getUserByUsername(username);
+        return ResponseEntity.ok(userDTO);
     }
 }

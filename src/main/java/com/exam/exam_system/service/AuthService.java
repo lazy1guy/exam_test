@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 public class AuthService {
 
@@ -121,5 +123,11 @@ public class AuthService {
     public void logout(Long userId, String accessToken) {
         // 将令牌加入黑名单
         tokenBlacklistService.blacklistToken(accessToken);
+    }
+
+    public UserDTO getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        return new UserDTO(user);
     }
 }
