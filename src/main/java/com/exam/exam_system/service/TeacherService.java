@@ -26,15 +26,17 @@ public class TeacherService {
     private final QuestionRepository questionRepository;
     private final ScoreRepository scoreRepository;
     private final AnswerRecordRepository answerRecordRepository;
+    private final UserRepository userRepository;
 
     public TeacherService(ExamRepository examRepository, HomeworkRepository homeworkRepository,
                           QuestionRepository questionRepository, ScoreRepository scoreRepository,
-                          AnswerRecordRepository answerRecordRepository) {
+                          AnswerRecordRepository answerRecordRepository, UserRepository userRepository) {
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
         this.questionRepository = questionRepository;
         this.scoreRepository = scoreRepository;
         this.answerRecordRepository = answerRecordRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -43,7 +45,9 @@ public class TeacherService {
         exam.setTitle(request.getTitle());
         exam.setDescription(request.getDescription());
         exam.setSubject(request.getSubject());
-        exam.setTeacher(new User(request.getTeacherId()));
+        User teacher = userRepository.findById(request.getTeacherId())
+                .orElseThrow(() -> new IllegalArgumentException("未找到指定的教师"));
+        exam.setTeacher(teacher);
         exam.setStartTime(request.getStartTime());
         exam.setEndTime(request.getEndTime());
         exam.setDuration(request.getDuration());
@@ -79,7 +83,9 @@ public class TeacherService {
         homework.setTitle(request.getTitle());
         homework.setDescription(request.getDescription());
         homework.setSubject(request.getSubject());
-        homework.setTeacher(new User(request.getTeacherId()));
+        User teacher = userRepository.findById(request.getTeacherId())
+                .orElseThrow(() -> new IllegalArgumentException("未找到指定的教师"));
+        homework.setTeacher(teacher);
         homework.setDeadline(request.getDeadline());
 
         // 计算总分

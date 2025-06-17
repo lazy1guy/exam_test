@@ -27,6 +27,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     })
     Optional<User> findByUsername(String userName);
 
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findById(@Param("id") Long id);
+
     // 添加批量查询
     @Query("SELECT u FROM User u WHERE u.id IN :ids")
     List<User> findByIds(@Param("ids") Set<Long> ids);
