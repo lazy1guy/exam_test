@@ -13,7 +13,7 @@ public class ExamPaper implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Exam exam;
-    private List<Question> questions;
+    private ExamDTO exam;
+    private List<QuestionDTO> questions;
     private long remainingTime;
 }

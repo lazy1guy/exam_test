@@ -19,8 +19,8 @@ public class ExamController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Exam>> getExamList(@RequestParam Long userId) {
-        List<Exam> exams = examService.getExamList(userId);
+    public ResponseEntity<List<ExamDTO>> getExamList(@RequestParam Long userId) {
+        List<ExamDTO> exams = examService.getExamList(userId);
         return ResponseEntity.ok(exams);
     }
 

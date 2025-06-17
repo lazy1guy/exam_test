@@ -1,6 +1,7 @@
 // 首页控制器
 package com.exam.exam_system.controller;
 
+import com.exam.exam_system.dto.NotificationDTO;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.HomeData;
 import com.exam.exam_system.service.HomeService;
@@ -26,8 +27,8 @@ public class HomeController {
     }
 
     @GetMapping("/notifications")
-    public ResponseEntity<List<Notification>> getNotifications(@RequestParam Long userId) {
-        List<Notification> notifications = homeService.getNotifications(userId);
+    public ResponseEntity<List<NotificationDTO>> getNotifications(@RequestParam Long userId) {
+        List<NotificationDTO> notifications = homeService.getNotifications(userId);
         return ResponseEntity.ok(notifications);
     }
 

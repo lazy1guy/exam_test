@@ -1,5 +1,13 @@
 package com.exam.exam_system.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -7,6 +15,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id",
+        scope = Score.class
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "score", indexes = {
         @Index(name = "idx_score_student", columnList = "student_id"),
         @Index(name = "idx_score_exam", columnList = "exam_id"),
@@ -45,6 +59,9 @@ public class Score implements Serializable
     private String status; // PASSED/FAILED, COMPLETED/LATE
 
     @Column(updatable = false)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createdAt;
 
     @PrePersist

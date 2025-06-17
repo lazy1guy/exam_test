@@ -1,5 +1,6 @@
 package com.exam.exam_system.service;
 
+import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.User;
 import com.exam.exam_system.dto.AuthResponse;
 import com.exam.exam_system.dto.LoginRequest;
@@ -36,7 +37,7 @@ public class AuthService {
     }
 
     @Transactional
-    public User register(User user) {
+    public UserDTO register(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("用户名已存在");
         }
@@ -46,11 +47,12 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
+        UserDTO userDTO = new UserDTO(savedUser);
 
         // 发送欢迎通知
         notificationService.sendWelcomeNotification(savedUser);
 
-        return savedUser;
+        return userDTO;
     }
 
     public AuthResponse login(LoginRequest request) {

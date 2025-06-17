@@ -8,6 +8,6 @@ import java.util.List;
 
 @Data
 public class HomeworkPaper {
-    private Homework homework;
-    private List<Question> questions;
+    private HomeworkDTO homework;
+    private List<QuestionDTO> questions;
 }

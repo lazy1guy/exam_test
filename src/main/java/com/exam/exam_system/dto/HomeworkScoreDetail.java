@@ -13,7 +13,7 @@ public class HomeworkScoreDetail implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Homework homework;
-    private Score score;
-    private List<AnswerRecord> answers;
+    private HomeworkDTO homework;
+    private ScoreDTO score;
+    private List<AnswerRecordDTO> answers;
 }

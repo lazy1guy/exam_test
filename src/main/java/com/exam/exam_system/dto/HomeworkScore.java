@@ -10,7 +10,7 @@ public class HomeworkScore implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Homework homework;
+    private HomeworkDTO homework;
     private Integer score;
     private Integer totalScore;
     private String status;

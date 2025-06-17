@@ -18,7 +18,7 @@ public class HomeData implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private List<Homework> recentHomeworks; // 最近的作业列表
-    private List<Exam> recentExams; // 最近的考试列表
-    private List<Score> latestScores; // 最新的成绩列表
+    private List<HomeworkDTO> recentHomeworks; // 最近的作业列表
+    private List<ExamDTO> recentExams; // 最近的考试列表
+    private List<ScoreDTO> latestScores; // 最新的成绩列表
 }

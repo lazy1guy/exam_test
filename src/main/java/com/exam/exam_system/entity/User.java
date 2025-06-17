@@ -1,5 +1,11 @@
 package com.exam.exam_system.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.*;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,6 +19,12 @@ import java.util.Collections;
 
 
 @Entity
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id",
+        scope = User.class
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_username", columnList = "username", unique = true),
         @Index(name = "idx_user_role", columnList = "role")
@@ -50,8 +62,14 @@ public class User implements UserDetails, Serializable
     private String avatarUrl;
 
     @Column(updatable = false)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createdAt;
 
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -64,10 +82,22 @@ public class User implements UserDetails, Serializable
         updatedAt = LocalDateTime.now();
     }
 
-    // 实现 UserDetails 接口的方法
+    @TableField(exist = false)
+    @JsonIgnore
+    private Collection<? extends GrantedAuthority> authorities;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
+        if (this.authorities == null) {
+            this.authorities = Collections.singletonList(
+                    new SimpleGrantedAuthority("ROLE_" + this.role)
+            );
+        }
+        return this.authorities;
+    }
+
+    public void setAuthorities(Collection<? extends GrantedAuthority> authorities) {
+        this.authorities = authorities;
     }
 
     @Override

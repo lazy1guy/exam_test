@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 public class ErrorQuestion {
     private Long id;
-    private Question question;
+    private QuestionDTO question;
     private String userAnswer;
     private String correctAnswer;
     private String source; // 来源：考试、作业等

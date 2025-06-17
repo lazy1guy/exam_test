@@ -38,7 +38,7 @@ public class TeacherService {
     }
 
     @Transactional
-    public Exam createExam(ExamCreateRequest request) {
+    public ExamDTO createExam(ExamCreateRequest request) {
         Exam exam = new Exam();
         exam.setTitle(request.getTitle());
         exam.setDescription(request.getDescription());
@@ -50,23 +50,31 @@ public class TeacherService {
 
         // 计算总分
         int totalScore = request.getQuestions().stream()
-                .mapToInt(Question::getScore)
+                .mapToInt(QuestionDTO::getScore)
                 .sum();
         exam.setTotalScore(totalScore);
 
         Exam savedExam = examRepository.save(exam);
 
         // 保存题目
-        for (Question q : request.getQuestions()) {
-            q.setExam(savedExam);
-            questionRepository.save(q);
+        for (QuestionDTO q : request.getQuestions()) {
+            Question entity = new Question();
+            entity.setContent(q.getContent());
+            entity.setOptions(q.getOptions());
+            entity.setAnswer(q.getAnswer());
+            entity.setScore(q.getScore());
+            entity.setType(q.getType());
+            entity.setExam(savedExam);
+            questionRepository.save(entity);
         }
 
-        return savedExam;
+        ExamDTO exam_dto = new ExamDTO(savedExam);
+
+        return exam_dto;
     }
 
     @Transactional
-    public Homework createHomework(HomeworkCreateRequest request) {
+    public HomeworkDTO createHomework(HomeworkCreateRequest request) {
         Homework homework = new Homework();
         homework.setTitle(request.getTitle());
         homework.setDescription(request.getDescription());
@@ -76,29 +84,39 @@ public class TeacherService {
 
         // 计算总分
         int totalScore = request.getQuestions().stream()
-                .mapToInt(Question::getScore)
+                .mapToInt(QuestionDTO::getScore)
                 .sum();
         homework.setTotalScore(totalScore);
 
         Homework savedHomework = homeworkRepository.save(homework);
 
         // 保存题目
-        for (Question q : request.getQuestions()) {
-            q.setHomework(savedHomework);
-            questionRepository.save(q);
+        for (QuestionDTO q : request.getQuestions()) {
+            Question entity = new Question();
+            entity.setContent(q.getContent());
+            entity.setOptions(q.getOptions());
+            entity.setAnswer(q.getAnswer());
+            entity.setScore(q.getScore());
+            entity.setType(q.getType());
+            entity.setHomework(savedHomework);
+            questionRepository.save(entity);
         }
 
-        return savedHomework;
+
+
+        return new HomeworkDTO(savedHomework);
     }
 
     public ExamResults getExamResults(Long examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new RuntimeException("考试不存在"));
 
+        ExamDTO examDTO = new ExamDTO(exam);
+
         List<Score> scores = scoreRepository.findByExamId(examId);
 
         ExamResults results = new ExamResults();
-        results.setExam(exam);
+        results.setExam(examDTO);
 
         // 计算统计信息
         double avgScore = calculateAverageScore(scores);
@@ -135,10 +153,12 @@ public class TeacherService {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new RuntimeException("作业不存在"));
 
+        HomeworkDTO homeworkDTO = new HomeworkDTO(homework);
+
         List<Score> scores = scoreRepository.findByHomeworkId(homeworkId);
 
         HomeworkResults results = new HomeworkResults();
-        results.setHomework(homework);
+        results.setHomework(homeworkDTO);
 
         // 计算统计信息
         double avgScore = calculateAverageScore(scores);

@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Data
 public class HomeworkResults {
-    private Homework homework;
+    private HomeworkDTO homework;
     private double avgScore;
     private double completionRate;
     private List<StudentScore> studentScores;

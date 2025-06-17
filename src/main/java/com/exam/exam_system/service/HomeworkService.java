@@ -1,8 +1,8 @@
 // 作业服务
 package com.exam.exam_system.service;
 
-import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.*;
+import com.exam.exam_system.entity.*;
 import com.exam.exam_system.repository.*;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -44,14 +44,21 @@ public class HomeworkService {
 
     // 添加作业列表缓存
     @Cacheable(value = "homeworkListCache", key = "{#userId, #root.methodName}")
-    public List<Homework> getHomeworkList(Long userId) {
+    public List<HomeworkDTO> getHomeworkList(Long userId) {
         // 学生获取可做的作业，教师获取自己创建的作业
         User currentUser = getCurrentUser();
+        List<Homework> homeworks;
+
         if ("TEACHER".equals(currentUser.getRole())) {
-            return homeworkRepository.findByTeacherId(currentUser.getId());
+            homeworks = homeworkRepository.findByTeacherId(currentUser.getId());
         } else {
-            return homeworkRepository.findActiveHomeworks(LocalDateTime.now());
+            homeworks = homeworkRepository.findActiveHomeworks(LocalDateTime.now());
         }
+
+        // 转换为安全DTO
+        return homeworks.stream()
+                .map(HomeworkDTO::new)
+                .collect(Collectors.toList());
     }
 
     // 添加作业详情缓存
@@ -60,12 +67,19 @@ public class HomeworkService {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new RuntimeException("作业不存在"));
 
+        // 转换为安全DTO
+        HomeworkDTO homeworkDTO = new HomeworkDTO(homework);
+        List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
+        List<QuestionDTO> questionDTOs = questions.stream()
+                .map(QuestionDTO::new)
+                .collect(Collectors.toList());
+
         HomeworkDetail detail = new HomeworkDetail();
-        detail.setHomework(homework);
-        detail.setQuestions(questionRepository.findByHomeworkId(homeworkId));
-        detail.setSubject(homework.getSubject());
-        detail.setTitle(homework.getTitle());
-        detail.setDeadline(homework.getDeadline());
+        detail.setHomework(homeworkDTO);
+        detail.setQuestions(questionDTOs);
+        detail.setSubject(homeworkDTO.getSubject());
+        detail.setTitle(homeworkDTO.getTitle());
+        detail.setDeadline(homeworkDTO.getDeadline());
 
         // 检查学生是否已提交作业
         User currentUser = getCurrentUser();
@@ -92,9 +106,16 @@ public class HomeworkService {
             throw new RuntimeException("您已经提交过本次作业");
         }
 
+        // 转换为安全DTO
+        HomeworkDTO homeworkDTO = new HomeworkDTO(homework);
+        List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
+        List<QuestionDTO> questionDTOs = questions.stream()
+                .map(QuestionDTO::new)
+                .collect(Collectors.toList());
+
         HomeworkPaper paper = new HomeworkPaper();
-        paper.setHomework(homework);
-        paper.setQuestions(questionRepository.findByHomeworkId(homeworkId));
+        paper.setHomework(homeworkDTO);
+        paper.setQuestions(questionDTOs);
 
         return paper;
     }
@@ -124,11 +145,29 @@ public class HomeworkService {
                 Question question = questionMap.get(answer.getQuestionId());
                 if (question == null) continue;
 
+                User student = userRepository.findById(studentId)
+                        .orElseThrow(() -> new RuntimeException("学生不存在"));
+
+                Homework h = homeworkRepository.findById(homeworkId)
+                        .orElseThrow(() -> new RuntimeException("作业不存在"));
+
                 AnswerRecord record = new AnswerRecord();
-                record.setStudent(new User(studentId));
+                record.setStudent(student);
                 record.setQuestion(question);
-                record.setHomework(new Homework(homeworkId));
+                record.setHomework(h);
                 record.setAnswer(answer.getAnswer());
+
+                // 自动批改客观题
+                if (isAutoGradeQuestion(question.getType())) {
+                    boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
+                    record.setIsCorrect(isCorrect);
+                    record.setScore(isCorrect ? question.getScore() : 0);
+                    record.setMastered(isCorrect);
+                } else {
+                    // 主观题需要教师批改
+                    record.setIsCorrect(null);
+                    record.setScore(null);
+                }
 
                 records.add(record);
             }
@@ -141,6 +180,7 @@ public class HomeworkService {
             redisTemplate.delete(submitKey);
         }
     }
+
     // 异步处理作业成绩
     @Async
     @Transactional
@@ -155,9 +195,15 @@ public class HomeworkService {
 
         boolean isLate = LocalDateTime.now().isAfter(deadline);
 
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("学生不存在"));
+
+        Homework h = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new RuntimeException("作业不存在"));
+
         Score score = new Score();
-        score.setStudent(new User(studentId));
-        score.setHomework(new Homework(homeworkId));
+        score.setStudent(student);
+        score.setHomework(h);
         score.setScore(calculatedScore);
         score.setTotalScore(totalScore);
         score.setStatus(isLate ? "LATE" : hasSubjective ? "SUBMITTED" : "COMPLETED");
@@ -240,7 +286,8 @@ public class HomeworkService {
     private boolean isAutoGradeQuestion(String type) {
         return "SINGLE_CHOICE".equals(type) ||
                 "MULTIPLE_CHOICE".equals(type) ||
-                "TRUE_FALSE".equals(type);
+                "TRUE_FALSE".equals(type) ||
+                "SHORT_ANSWER".equals(type);
     }
 
     private User getCurrentUser() {

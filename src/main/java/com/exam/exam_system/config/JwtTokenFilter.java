@@ -33,7 +33,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/**",
             "/api/homeworks/active",
-            "/api/exams/**",
+            "/api/exams/upcoming",  // 明确指定公开路径
+            "/api/exams/past",      // 而不是通配所有考试路径
             "/api/home/**"
     );
 

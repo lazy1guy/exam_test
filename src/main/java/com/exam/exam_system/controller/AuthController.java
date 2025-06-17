@@ -1,6 +1,7 @@
 // 认证控制器
 package com.exam.exam_system.controller;
 
+import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.AuthResponse;
 import com.exam.exam_system.dto.LoginRequest;
@@ -19,8 +20,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        User registeredUser = authService.register(user);
+    public ResponseEntity<UserDTO> register(@RequestBody User user) {
+        UserDTO registeredUser = authService.register(user);
         return ResponseEntity.ok(registeredUser);
     }
 

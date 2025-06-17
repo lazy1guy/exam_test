@@ -13,5 +13,5 @@ public class HomeworkCreateRequest {
     private Long teacherId;   // 创建作业的教师id
     private String subject; //科目
     private LocalDateTime deadline;
-    private List<Question> questions;
+    private List<QuestionDTO> questions;
 }

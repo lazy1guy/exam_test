@@ -1,8 +1,8 @@
 package com.exam.exam_system.controller;
 
 import com.exam.exam_system.dto.Answer;
+import com.exam.exam_system.dto.HomeworkDTO;
 import com.exam.exam_system.dto.HomeworkPaper;
-import com.exam.exam_system.entity.Homework;
 import com.exam.exam_system.dto.HomeworkDetail;
 import com.exam.exam_system.service.HomeworkService;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +20,8 @@ public class HomeworkController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Homework>> getHomeworkList(@RequestParam Long userId) {
-        List<Homework> homeworks = homeworkService.getHomeworkList(userId);
+    public ResponseEntity<List<HomeworkDTO>> getHomeworkList(@RequestParam Long userId) {
+        List<HomeworkDTO> homeworks = homeworkService.getHomeworkList(userId);
         return ResponseEntity.ok(homeworks);
     }
 

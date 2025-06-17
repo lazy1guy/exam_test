@@ -2,7 +2,6 @@
 package com.exam.exam_system.controller;
 
 import com.exam.exam_system.dto.*;
-import com.exam.exam_system.entity.*;
 import com.exam.exam_system.service.TeacherService;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -25,14 +24,14 @@ public class TeacherController {
     }
 
     @PostMapping("/exams")
-    public ResponseEntity<Exam> createExam(@RequestBody ExamCreateRequest request) {
-        Exam exam = teacherService.createExam(request);
+    public ResponseEntity<ExamDTO> createExam(@RequestBody ExamCreateRequest request) {
+        ExamDTO exam = teacherService.createExam(request);
         return ResponseEntity.ok(exam);
     }
 
     @PostMapping("/homeworks")
-    public ResponseEntity<Homework> createHomework(@RequestBody HomeworkCreateRequest request) {
-        Homework homework = teacherService.createHomework(request);
+    public ResponseEntity<HomeworkDTO> createHomework(@RequestBody HomeworkCreateRequest request) {
+        HomeworkDTO homework = teacherService.createHomework(request);
         return ResponseEntity.ok(homework);
     }
 

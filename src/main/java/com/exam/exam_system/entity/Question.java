@@ -1,12 +1,21 @@
 // 题目实体
 package com.exam.exam_system.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
 
 @Entity
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id",
+        scope = Question.class
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "question", indexes = {
         @Index(name = "idx_question_exam", columnList = "exam_id"),
         @Index(name = "idx_question_homework", columnList = "homework_id")

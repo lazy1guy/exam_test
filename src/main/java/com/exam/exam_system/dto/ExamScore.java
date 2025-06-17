@@ -10,7 +10,7 @@ public class ExamScore implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Exam exam;
+    private ExamDTO exam;
     private Integer score;
     private Integer totalScore;
     private String status;

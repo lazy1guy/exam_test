@@ -1,6 +1,14 @@
 // 答题记录实体类
 package com.exam.exam_system.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -8,6 +16,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id",
+        scope = AnswerRecord.class
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "answer_record", indexes = {
         @Index(name = "idx_answerrecord_student", columnList = "student_id"),
         @Index(name = "idx_answerrecord_exam", columnList = "exam_id"),
@@ -54,6 +68,9 @@ public class AnswerRecord implements Serializable
     private boolean mastered = false; // 是否已掌握
 
     @Column(nullable = false)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createdAt;
 
     @PrePersist

@@ -14,8 +14,8 @@ public class HomeworkDetail implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Homework homework;
-    private List<Question> questions;
+    private HomeworkDTO homework;
+    private List<QuestionDTO> questions;
     private Boolean hasSubmitted;
     private String subject;
     private String title;

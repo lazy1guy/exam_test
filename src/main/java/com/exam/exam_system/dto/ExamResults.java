@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Data
 public class ExamResults {
-    private Exam exam;
+    private ExamDTO exam;
     private double avgScore;
     private double passRate;
     private List<StudentScore> studentScores;

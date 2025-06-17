@@ -168,8 +168,13 @@ public class ErrorBookService {
             practiceQuestions = practiceQuestions.subList(0, count);
         }
 
+        // 转换为安全DTO
+        List<QuestionDTO> questionDTOs = practiceQuestions.stream()
+                .map(QuestionDTO::new)
+                .collect(Collectors.toList());
+
         PracticePaper paper = new PracticePaper();
-        paper.setQuestions(practiceQuestions);
+        paper.setQuestions(questionDTOs);
         return paper;
     }
 
@@ -179,7 +184,9 @@ public class ErrorBookService {
     private ErrorQuestion toErrorQuestion(AnswerRecord record) {
         ErrorQuestion eq = new ErrorQuestion();
         eq.setId(record.getId());
-        eq.setQuestion(record.getQuestion());
+        eq.setQuestion(new QuestionDTO(record.getQuestion()));
+        eq.setUserAnswer(record.getAnswer());
+        eq.setCorrectAnswer(record.getQuestion().getAnswer());
         eq.setUserAnswer(record.getAnswer());
         eq.setCorrectAnswer(record.getQuestion().getAnswer());
         eq.setSource(record.getExam() != null ? "考试" : record.getHomework() != null ? "作业" : "其他");

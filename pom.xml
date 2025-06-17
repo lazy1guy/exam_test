@@ -53,6 +53,19 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>3.5.5</version> <!-- 使用最新稳定版 -->
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>4.9</version> <!-- 必须使用 4.9 或更高版本 -->
+        </dependency>
+
+
 
         <!-- 测试依赖 -->
         <dependency>

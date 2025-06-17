@@ -13,7 +13,7 @@ public class ExamScoreDetail implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private Exam exam;
-    private Score score;
-    private List<AnswerRecord> answers;
+    private ExamDTO exam;
+    private ScoreDTO score;
+    private List<AnswerRecordDTO> answers;
 }

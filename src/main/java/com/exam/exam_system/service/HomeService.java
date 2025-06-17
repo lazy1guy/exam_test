@@ -1,8 +1,8 @@
 // 首页服务
 package com.exam.exam_system.service;
 
+import com.exam.exam_system.dto.*;
 import com.exam.exam_system.entity.*;
-import com.exam.exam_system.dto.HomeData;
 import com.exam.exam_system.repository.ExamRepository;
 import com.exam.exam_system.repository.HomeworkRepository;
 import com.exam.exam_system.repository.NotificationRepository;
@@ -35,32 +35,40 @@ public class HomeService {
     public HomeData getHomeData(Long userId){
         HomeData homeData = new HomeData();
 
-        //获取最近的3个作业
+        // 获取最近的3个作业并转换为安全DTO
         List<Homework> activeHomeworks = homeworkRepository.findActiveHomeworks(LocalDateTime.now());
-
-        homeData.setRecentHomeworks(activeHomeworks.parallelStream()
+        List<HomeworkDTO> homeworkDTOs = activeHomeworks.parallelStream()
                 .limit(3)
-                .collect(Collectors.toList()));
+                .map(HomeworkDTO::new)
+                .collect(Collectors.toList());
+        homeData.setRecentHomeworks(homeworkDTOs);
 
-        // 获取最近的3个考试
+        // 获取最近的3个考试并转换为安全DTO
         List<Exam> upcomingExams = examRepository.findOngoingExams(LocalDateTime.now());
-        homeData.setRecentExams(upcomingExams.parallelStream()
+        List<ExamDTO> examDTOs = upcomingExams.parallelStream()
                 .limit(3)
-                .collect(Collectors.toList()));
+                .map(ExamDTO::new)
+                .collect(Collectors.toList());
+        homeData.setRecentExams(examDTOs);
 
-        // 获取最新3个成绩
+        // 获取最新3个成绩并转换为安全DTO
         List<Score> scores = scoreRepository.findByStudentId(userId);
         scores.sort(Comparator.comparing(Score::getCreatedAt).reversed());
-        homeData.setLatestScores(scores.parallelStream()
+        List<ScoreDTO> scoreDTOs = scores.parallelStream()
                 .limit(3)
-                .collect(Collectors.toList()));
+                .map(ScoreDTO::new)
+                .collect(Collectors.toList());
+        homeData.setLatestScores(scoreDTOs);
 
         return homeData;
     }
 
     @Cacheable(value = "unreadNotifications", key = "#userId")
-    public List<Notification> getNotifications(Long userId) {
-        return notificationRepository.findByUserIdAndReadStatusFalse(userId);
+    public List<NotificationDTO> getNotifications(Long userId) {
+        List<Notification> notifications = notificationRepository.findByUserIdAndReadStatusFalse(userId);
+        return notifications.stream()
+                .map(NotificationDTO::new)
+                .collect(Collectors.toList());
     }
 
     @CacheEvict(value = "unreadNotifications", key = "#notification.user.id")

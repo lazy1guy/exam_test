@@ -15,5 +15,5 @@ public class ExamCreateRequest {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Integer duration;
-    private List<Question> questions;
+    private List<QuestionDTO> questions;
 }

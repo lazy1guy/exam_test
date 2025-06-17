@@ -1,8 +1,8 @@
 // 成绩服务
 package com.exam.exam_system.service;
 
-import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.*;
+import com.exam.exam_system.entity.*;
 import com.exam.exam_system.repository.ExamRepository;
 import com.exam.exam_system.repository.ScoreRepository;
 import com.exam.exam_system.repository.UserRepository;
@@ -23,7 +23,9 @@ public class ScoreService {
     private final ScoreRepository scoreRepository;
     private final UserRepository userRepository;
 
-    public ScoreService(HomeworkRepository homeworkRepository, ExamRepository examRepository, AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository, UserRepository userRepository) {
+    public ScoreService(HomeworkRepository homeworkRepository, ExamRepository examRepository,
+                        AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository,
+                        UserRepository userRepository) {
         this.homeworkRepository = homeworkRepository;
         this.examRepository = examRepository;
         this.answerRecordRepository = answerRecordRepository;
@@ -69,7 +71,8 @@ public class ScoreService {
                 .filter(s -> s.getExam() != null)
                 .map(s -> {
                     ExamScore es = new ExamScore();
-                    es.setExam(s.getExam());
+                    // 使用安全DTO替代实体类
+                    es.setExam(new ExamDTO(s.getExam()));
                     es.setScore(s.getScore());
                     es.setTotalScore(s.getTotalScore());
                     es.setStatus(s.getStatus());
@@ -85,7 +88,8 @@ public class ScoreService {
                 .filter(s -> s.getHomework() != null)
                 .map(s -> {
                     HomeworkScore hs = new HomeworkScore();
-                    hs.setHomework(s.getHomework());
+                    // 使用安全DTO替代实体类
+                    hs.setHomework(new HomeworkDTO(s.getHomework()));
                     hs.setScore(s.getScore());
                     hs.setTotalScore(s.getTotalScore());
                     hs.setStatus(s.getStatus());
@@ -102,10 +106,20 @@ public class ScoreService {
 
         List<AnswerRecord> answers = answerRecordRepository.findByStudentIdAndExamId(userId, examId);
 
+        // 转换为安全DTO
+        Exam exam = examRepository.findById(examId).orElse(null);
+        ExamDTO examDTO = exam != null ? new ExamDTO(exam) : null;
+
+        // 创建安全DTO对象
+        ScoreDTO scoreDTO = new ScoreDTO(score);
+        List<AnswerRecordDTO> answerDTOs = answers.stream()
+                .map(AnswerRecordDTO::new)
+                .collect(Collectors.toList());
+
         ExamScoreDetail detail = new ExamScoreDetail();
-        detail.setScore(score);
-        detail.setAnswers(answers);
-        detail.setExam(examRepository.findById(examId).orElse(null));
+        detail.setScore(scoreDTO);
+        detail.setAnswers(answerDTOs);
+        detail.setExam(examDTO);
 
         return detail;
     }
@@ -118,10 +132,20 @@ public class ScoreService {
 
         List<AnswerRecord> answers = answerRecordRepository.findByStudentIdAndHomeworkId(userId, homeworkId);
 
+        // 转换为安全DTO
+        Homework homework = homeworkRepository.findById(homeworkId).orElse(null);
+        HomeworkDTO homeworkDTO = homework != null ? new HomeworkDTO(homework) : null;
+
+        // 创建安全DTO对象
+        ScoreDTO scoreDTO = new ScoreDTO(score);
+        List<AnswerRecordDTO> answerDTOs = answers.stream()
+                .map(AnswerRecordDTO::new)
+                .collect(Collectors.toList());
+
         HomeworkScoreDetail detail = new HomeworkScoreDetail();
-        detail.setScore(score);
-        detail.setAnswers(answers);
-        detail.setHomework(homeworkRepository.findById(homeworkId).orElse(null));
+        detail.setScore(scoreDTO);
+        detail.setAnswers(answerDTOs);
+        detail.setHomework(homeworkDTO);
 
         return detail;
     }

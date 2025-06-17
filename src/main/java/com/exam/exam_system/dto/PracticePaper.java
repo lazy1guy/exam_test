@@ -7,5 +7,5 @@ import java.util.List;
 
 @Data
 public class PracticePaper {
-    private List<Question> questions;
+    private List<QuestionDTO> questions;
 }

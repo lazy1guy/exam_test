@@ -16,8 +16,8 @@ public class ExamDetail implements Serializable
     private static final long serialVersionUID = 1L;
 
     private Boolean hasTaken;
-    private Exam exam;
-    private List<Question> questions;
+    private ExamDTO exam;
+    private List<QuestionDTO> questions;
     private String subject;
     private String title;
     private LocalDateTime startTime;

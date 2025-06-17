@@ -1,7 +1,7 @@
 package com.exam.exam_system.service;
 
-import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.*;
+import com.exam.exam_system.entity.*;
 import com.exam.exam_system.repository.UserRepository;
 import com.exam.exam_system.repository.AnswerRecordRepository;
 import com.exam.exam_system.repository.ExamRepository;
@@ -52,30 +52,43 @@ public class ExamService {
 
     // 添加考试列表缓存
     @Cacheable(value = "examListCache", key = "{#userId, #root.methodName}")
-    public List<Exam> getExamList(Long userId){
-        //学生获取可参加的考试，教师获取自己创建的考试
+    public List<ExamDTO> getExamList(Long userId){
+        // 学生获取可参加的考试，教师获取自己创建的考试
         User currentUser = getCurrentUser();
+        List<Exam> exams;
+
         if("TEACHER".equals(currentUser.getRole())){
-            return examRepository.findByTeacherId(userId);
-        }   else{
-            return examRepository.findOngoingExams(LocalDateTime.now());
+            exams = examRepository.findByTeacherId(userId);
+        } else {
+            exams = examRepository.findOngoingExams(LocalDateTime.now());
         }
+
+        // 转换为安全DTO
+        return exams.stream()
+                .map(ExamDTO::new)
+                .collect(Collectors.toList());
     }
 
-
     @Cacheable(value = "examDetailCache", key = "#examId")
-    public  ExamDetail getExamDetail(Long examId){
+    public ExamDetail getExamDetail(Long examId){
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(()->new RuntimeException("考试不存在"));
 
+        // 转换为安全DTO
+        ExamDTO examDTO = new ExamDTO(exam);
+        List<Question> questions = questionRepository.findByExamId(examId);
+        List<QuestionDTO> questionDTOs = questions.stream()
+                .map(QuestionDTO::new)
+                .collect(Collectors.toList());
+
         ExamDetail detail = new ExamDetail();
-        detail.setExam(exam);
-        detail.setQuestions(questionRepository.findByExamId(examId));
-        detail.setSubject(exam.getSubject());
-        detail.setTitle(exam.getTitle());
-        detail.setStartTime(exam.getStartTime());
-        detail.setEndTime(exam.getEndTime());
-        detail.setDuration(exam.getDuration());
+        detail.setExam(examDTO);
+        detail.setQuestions(questionDTOs);
+        detail.setSubject(examDTO.getSubject());
+        detail.setTitle(examDTO.getTitle());
+        detail.setStartTime(examDTO.getStartTime());
+        detail.setEndTime(examDTO.getEndTime());
+        detail.setDuration(examDTO.getDuration());
 
         // 检查学生是否已参加考试
         User currentUser = getCurrentUser();
@@ -86,8 +99,6 @@ public class ExamService {
 
         return detail;
     }
-
-
 
     public ExamPaper startExam(Long examId, Long studentId) {
         Exam exam = examRepository.findById(examId)
@@ -104,9 +115,16 @@ public class ExamService {
             throw new RuntimeException("您已经参加过本次考试");
         }
 
+        // 转换为安全DTO
+        ExamDTO examDTO = new ExamDTO(exam);
+        List<Question> questions = questionRepository.findByExamId(examId);
+        List<QuestionDTO> questionDTOs = questions.stream()
+                .map(QuestionDTO::new)
+                .collect(Collectors.toList());
+
         ExamPaper paper = new ExamPaper();
-        paper.setExam(exam);
-        paper.setQuestions(questionRepository.findByExamId(examId));
+        paper.setExam(examDTO);
+        paper.setQuestions(questionDTOs);
 
         // 计算剩余时间
         long remainingSeconds = Duration.between(now, exam.getEndTime()).getSeconds();
@@ -144,10 +162,16 @@ public class ExamService {
                 Question question = questionMap.get(answer.getQuestionId());
                 if (question == null) continue;
 
+                User student = userRepository.findById(studentId)
+                        .orElseThrow(() -> new RuntimeException("学生不存在"));
+
+                Exam exam_ = examRepository.findById(examId)
+                        .orElseThrow(() -> new RuntimeException("考试不存在"));
+
                 AnswerRecord record = new AnswerRecord();
-                record.setStudent(new User(studentId));
+                record.setStudent(student);
                 record.setQuestion(question);
-                record.setExam(new Exam(examId));
+                record.setExam(exam_);
                 record.setAnswer(answer.getAnswer());
 
                 // 自动批改客观题
@@ -155,6 +179,7 @@ public class ExamService {
                     boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
                     record.setIsCorrect(isCorrect);
                     record.setScore(isCorrect ? question.getScore() : 0);
+                    record.setMastered(isCorrect);
                 } else {
                     // 主观题需要教师批改
                     record.setIsCorrect(null);
@@ -185,9 +210,15 @@ public class ExamService {
                     .mapToInt(AnswerRecord::getScore)
                     .sum();
 
+            User student = userRepository.findById(studentId)
+                    .orElseThrow(() -> new RuntimeException("学生不存在"));
+
+            Exam exam = examRepository.findById(examId)
+                    .orElseThrow(() -> new RuntimeException("考试不存在"));
+
             Score score = new Score();
-            score.setStudent(new User(studentId));
-            score.setExam(new Exam(examId));
+            score.setStudent(student); // 使用完整实体
+            score.setExam(exam); // 使用完整实体
             score.setScore(calculatedScore);
             score.setTotalScore(totalScore);
             score.setStatus(calculatedScore >= totalScore * 0.6 ? "PASSED" : "FAILED");
@@ -263,7 +294,8 @@ public class ExamService {
     private boolean isAutoGradeQuestion(String type) {
         return "SINGLE_CHOICE".equals(type) ||
                 "MULTIPLE_CHOICE".equals(type) ||
-                "TRUE_FALSE".equals(type);
+                "TRUE_FALSE".equals(type) ||
+                "SHORT_ANSWER".equals(type);
     }
 
     private User getCurrentUser() {
