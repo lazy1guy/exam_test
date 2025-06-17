@@ -69,16 +69,21 @@ public class AuthService {
             User user = userRepository.findByUsername(request.getUsername())
                     .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-            String accessToken = tokenProvider.generateToken(user);
+            String token = tokenProvider.generateToken(user);
             String refreshToken = tokenProvider.generateRefreshToken(user);
 
-            return new AuthResponse(
+            AuthResponse.Data data = new AuthResponse.Data(
                     user.getId(),
                     user.getUsername(),
                     user.getRole(),
-                    accessToken,
+                    token,
                     refreshToken,
-                    tokenProvider.getExpirationDate(accessToken).getTime()
+                    tokenProvider.getExpirationDate(token).getTime()
+            );
+
+            return new AuthResponse(
+                    20000,
+                    data
             );
         } catch (BadCredentialsException ex) {
             throw new RuntimeException("用户名或密码错误");
@@ -95,16 +100,21 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
         // 生成新的访问令牌
-        String newAccessToken = tokenProvider.generateToken(user);
+        String token = tokenProvider.generateToken(user);
         String newRefreshToken = tokenProvider.generateRefreshToken(user);
 
-        return new AuthResponse(
+        AuthResponse.Data data = new AuthResponse.Data(
                 user.getId(),
                 user.getUsername(),
                 user.getRole(),
-                newAccessToken,
-                newRefreshToken,
-                tokenProvider.getExpirationDate(newAccessToken).getTime()
+                token,
+                refreshToken,
+                tokenProvider.getExpirationDate(token).getTime()
+        );
+
+        return new AuthResponse(
+                20000,
+                data
         );
     }
 

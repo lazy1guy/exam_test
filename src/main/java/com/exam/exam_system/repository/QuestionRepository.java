@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
@@ -42,5 +43,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Modifying
     @Query("DELETE FROM Question q WHERE q.homework.id = :homeworkId")
     void deleteByHomeworkId(@Param("homeworkId") Long homeworkId);
+
+    @Query("SELECT q FROM Question q WHERE q.content = :content")
+    Optional<Question> findByContent(@Param("content") String content);
 
 }

@@ -1,5 +1,6 @@
 package com.exam.exam_system.repository;
 
+import com.exam.exam_system.entity.Exam;
 import com.exam.exam_system.entity.Homework;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface HomeworkRepository extends JpaRepository<Homework, Long> {
@@ -47,4 +49,6 @@ public interface HomeworkRepository extends JpaRepository<Homework, Long> {
     @Query("UPDATE Homework h SET h.teacher = NULL WHERE h.teacher.id = :teacherId")
     void nullifyTeacherIdByUserId(@Param("teacherId") Long teacherId);
 
+    @Query("SELECT h FROM Homework h WHERE h.title = :title")
+    Optional<Homework> findByTitle(@Param("title") String title);
 }

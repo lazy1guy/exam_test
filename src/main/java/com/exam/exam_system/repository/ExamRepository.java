@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ExamRepository extends JpaRepository<Exam, Long>{
@@ -49,4 +50,6 @@ public interface ExamRepository extends JpaRepository<Exam, Long>{
     @Query("UPDATE Exam e SET e.teacher = NULL WHERE e.teacher.id = :teacherId")
     void nullifyTeacherIdByUserId(@Param("teacherId") Long teacherId);
 
+    @Query("SELECT e FROM Exam e WHERE e.title = :title")
+    Optional<Exam> findByTitle(@Param("title") String title);
 }
