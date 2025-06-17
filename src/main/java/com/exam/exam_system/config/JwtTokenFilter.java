@@ -31,7 +31,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     // 使用 Ant 风格路径匹配
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth/**",
+            "/api/auth/register",
+            "api/auth/login",
             "/api/homeworks/active",
             "/api/exams/upcoming",  // 明确指定公开路径
             "/api/exams/past",      // 而不是通配所有考试路径

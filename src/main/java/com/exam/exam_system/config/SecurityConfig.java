@@ -93,13 +93,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 公开访问的路径
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/homeworks/active").permitAll()
                         .requestMatchers("/api/exams/upcoming").permitAll()
                         .requestMatchers("/api/exams/past").permitAll()
                         .requestMatchers("/api/home/**").permitAll()
 
                         // 角色访问控制
+                        .requestMatchers("/api/auth/current-user").authenticated() // 确保需要认证
                         .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT")
                         .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT")
                         .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT")

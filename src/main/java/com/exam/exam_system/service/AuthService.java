@@ -127,7 +127,7 @@ public class AuthService {
 
     public UserDTO getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new RuntimeException(username + "用户不存在"));
         return new UserDTO(user);
     }
 }
