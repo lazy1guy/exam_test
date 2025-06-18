@@ -120,9 +120,9 @@ public class AuthService {
         );
     }
 
-    public void logout(Long userId, String accessToken) {
+    public void logout(String token) {
         // 将令牌加入黑名单
-        tokenBlacklistService.blacklistToken(accessToken);
+        tokenBlacklistService.blacklistToken(token);
     }
 
     public UserDTO getUserByUsername(String username) {
