@@ -4,10 +4,13 @@ package com.exam.exam_system.controller;
 import com.exam.exam_system.dto.*;
 import com.exam.exam_system.entity.Exam;
 import com.exam.exam_system.service.ExamService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/exams")
@@ -31,10 +34,18 @@ public class ExamController {
     }
 
     @GetMapping("/{examId}/start")
-    public ResponseEntity<ExamPaper> startExam(@PathVariable Long examId,
-                                               @RequestParam Long studentId) {
-        ExamPaper paper = examService.startExam(examId, studentId);
-        return ResponseEntity.ok(paper);
+    public ResponseEntity<?> startExam(@PathVariable Long examId,
+                                       @RequestParam Long studentId) {
+        try {
+            ExamPaper paper = examService.startExam(examId, studentId);
+            return ResponseEntity.ok(paper);
+        } catch (RuntimeException e) {
+            // 返回更详细的错误信息
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
     }
 
     @PostMapping("/{examId}/submit")
