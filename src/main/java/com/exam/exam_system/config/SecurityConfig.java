@@ -102,12 +102,12 @@ public class SecurityConfig {
 
                         // 角色访问控制
                         .requestMatchers("/api/auth/current-user").authenticated() // 确保需要认证
-                        .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT")
-                        .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT")
-                        .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT")
-                        .requestMatchers("/api/error-book/**").hasRole("STUDENT")
+                        .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")
+                        .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")
+                        .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")
+                        .requestMatchers("/api/error-book/**").hasAnyRole("STUDENT","ADMIN")
                         .requestMatchers("/api/profile/**").authenticated()
-                        .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+                        .requestMatchers("/api/teacher/**").hasAnyRole("TEACHER","ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // 默认规则

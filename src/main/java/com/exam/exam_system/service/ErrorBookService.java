@@ -219,4 +219,13 @@ public class ErrorBookService {
 
         return questionRepository.findAll(pageable).getContent();
     }
+
+    @Transactional(readOnly = true)
+    public Long getErrorBookCount(Long userId) {
+        // 验证用户存在
+        userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        return answerRecordRepository.countByStudentIdAndIsCorrectFalseAndMasteredFalse(userId);
+    }
 }

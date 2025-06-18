@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/error-book")
@@ -23,6 +24,13 @@ public class ErrorBookController {
     public ResponseEntity<List<ErrorQuestion>> getErrorBook(@RequestParam Long userId) {
         List<ErrorQuestion> errors = errorBookService.getErrorBook(userId);
         return ResponseEntity.ok(errors);
+    }
+
+    // 获取错题数量
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Long>> getErrorBookCount(@RequestParam Long userId) {
+        Long count = errorBookService.getErrorBookCount(userId);
+        return ResponseEntity.ok(Map.of("count", count));
     }
 
     @GetMapping("/subject/{subject}")
