@@ -41,7 +41,7 @@ public class ErrorBookService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        return answerRecordRepository.findByStudentIdAndIsCorrectFalse(userId).stream()
+        return answerRecordRepository.findByStudentIdAndIsCorrectFalseAndMasteredFalse(userId).stream()
                 .map(this::toErrorQuestion)
                 .collect(Collectors.toList());
     }
