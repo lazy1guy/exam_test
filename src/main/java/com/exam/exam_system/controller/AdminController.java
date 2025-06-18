@@ -1,5 +1,6 @@
 package com.exam.exam_system.controller;
 
+import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.User;
 import com.exam.exam_system.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +52,8 @@ public class AdminController {
 
     // 创建新用户
     @PostMapping("/users")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = adminService.createUser(user);
+    public ResponseEntity<UserDTO> createUser(@RequestBody User user) {
+        UserDTO createdUser = adminService.createUser(user);
         return ResponseEntity.ok(createdUser);
     }
 

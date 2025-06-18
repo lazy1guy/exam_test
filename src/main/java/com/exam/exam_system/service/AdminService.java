@@ -1,11 +1,13 @@
 package com.exam.exam_system.service;
 
+import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.User;
 import com.exam.exam_system.repository.*;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,14 +24,16 @@ public class AdminService {
     private final HomeworkRepository homeworkRepository;
     private final AnswerRecordRepository answerRecordRepository;
     private final ScoreRepository scoreRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminService(UserRepository userRepository, ExamRepository examRepository, HomeworkRepository homeworkRepository,
-                        AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository) {
+                        AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
         this.answerRecordRepository = answerRecordRepository;
         this.scoreRepository = scoreRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // 获取所有用户、外加提供按角色搜索
@@ -61,8 +65,11 @@ public class AdminService {
 
     // 创建新用户
     @Transactional
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public UserDTO createUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        User savedUser = userRepository.save(user);
+        UserDTO u = new UserDTO(savedUser);
+        return u;
     }
 
     // 更新用户信息
