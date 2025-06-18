@@ -45,11 +45,9 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/current-user")
-    public ResponseEntity<UserDTO> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        UserDTO userDTO = authService.getUserByUsername(username);
-        return ResponseEntity.ok(userDTO);
+    @GetMapping("/info")
+    public ResponseEntity<AuthResponse> getUserInfo(@RequestParam String token) {
+        AuthResponse response = authService.getUserInfo(token);
+        return ResponseEntity.ok(response);
     }
 }

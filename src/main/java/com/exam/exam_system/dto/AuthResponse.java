@@ -8,21 +8,26 @@ import lombok.Data;
 public class AuthResponse {
     private Integer code;
     private Data data;
+
+    @lombok.Data
+    @AllArgsConstructor
     public static class Data {
         private Long userId;
         private String username;
         private String role;
+        private String avatar;
         private String token;
         private String refreshToken;
-        private long expiresIn;
+        private Long expiresIn;
+    }
 
-        public Data(Long userId, String username, String role, String token, String refreshToken, Long expiresIn) {
-            this.userId = userId;
-            this.username = username;
-            this.role = role;
-            this.token = token;
-            this.refreshToken = refreshToken;
-            this.expiresIn = expiresIn;
-        }
+    public AuthResponse(Integer code, String token) {
+        this.code = code;
+        this.data = new Data(null, null, null, null, token, null, null);
+    }
+
+    public AuthResponse(Integer code, Long userId, String username, String role, String avatar, String token, String refreshToken, Long expiresIn) {
+        this.code = code;
+        this.data = new Data(userId, username, role, avatar, token, refreshToken, expiresIn);
     }
 }
