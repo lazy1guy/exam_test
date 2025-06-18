@@ -72,21 +72,8 @@ public class AuthService {
                     .orElseThrow(() -> new RuntimeException("用户不存在"));
 
             String token = tokenProvider.generateToken(user);
-            String refreshToken = tokenProvider.generateRefreshToken(user);
 
-            AuthResponse.Data data = new AuthResponse.Data(
-                    user.getId(),
-                    user.getUsername(),
-                    user.getRole(),
-                    token,
-                    refreshToken,
-                    tokenProvider.getExpirationDate(token).getTime()
-            );
-
-            return new AuthResponse(
-                    20000,
-                    data
-            );
+            return new AuthResponse(20000, token);
         } catch (BadCredentialsException ex) {
             throw new RuntimeException("用户名或密码错误");
         }
@@ -103,26 +90,34 @@ public class AuthService {
 
         // 生成新的访问令牌
         String token = tokenProvider.generateToken(user);
-        String newRefreshToken = tokenProvider.generateRefreshToken(user);
 
-        AuthResponse.Data data = new AuthResponse.Data(
-                user.getId(),
-                user.getUsername(),
-                user.getRole(),
-                token,
-                refreshToken,
-                tokenProvider.getExpirationDate(token).getTime()
-        );
+        return new AuthResponse(20000, token);
+    }
+
+    public AuthResponse getUserInfo(String token) {
+        if (!tokenProvider.validateToken(token)) {
+            throw new RuntimeException("无效的令牌");
+        }
+
+        String username = tokenProvider.getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
 
         return new AuthResponse(
                 20000,
-                data
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                user.getAvatar(),
+                "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
+                null,
+                tokenProvider.getExpirationDate(token).getTime()
         );
     }
 
-    public void logout(Long userId, String accessToken) {
+    public void logout(String token) {
         // 将令牌加入黑名单
-        tokenBlacklistService.blacklistToken(accessToken);
+        tokenBlacklistService.blacklistToken(token);
     }
 
     public UserDTO getUserByUsername(String username) {

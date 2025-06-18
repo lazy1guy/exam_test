@@ -6,6 +6,7 @@ import com.exam.exam_system.repository.HomeworkRepository;
 import com.exam.exam_system.repository.QuestionRepository;
 import com.exam.exam_system.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -17,13 +18,16 @@ public class DataInitializer implements CommandLineRunner {
     private final ExamRepository examRepository;
     private final HomeworkRepository homeworkRepository;
     private final QuestionRepository questionRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository, ExamRepository examRepository,
-                           HomeworkRepository homeworkRepository, QuestionRepository questionRepository) {
+                           HomeworkRepository homeworkRepository, QuestionRepository questionRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
         this.questionRepository = questionRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -32,7 +36,7 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByUsername("teacher1").isEmpty()) {
             User teacher1 = new User();
             teacher1.setUsername("teacher1");
-            teacher1.setPassword("123456");
+            teacher1.setPassword(passwordEncoder.encode("123456"));
             teacher1.setFullName("张老师");
             teacher1.setRole("TEACHER");
             teacher1.setEmail("teacher1@example.com");
@@ -40,7 +44,7 @@ public class DataInitializer implements CommandLineRunner {
 
             User student1 = new User();
             student1.setUsername("student1");
-            student1.setPassword("123456");
+            student1.setPassword(passwordEncoder.encode("123456"));
             student1.setFullName("李明");
             student1.setRole("STUDENT");
             student1.setEmail("student1@example.com");
@@ -48,7 +52,7 @@ public class DataInitializer implements CommandLineRunner {
 
             User student2 = new User();
             student2.setUsername("student2");
-            student2.setPassword("123456");
+            student2.setPassword(passwordEncoder.encode("123456"));
             student2.setFullName("王芳");
             student2.setRole("STUDENT");
             student2.setEmail("student2@example.com");

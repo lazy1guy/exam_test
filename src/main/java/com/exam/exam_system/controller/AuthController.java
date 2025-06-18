@@ -40,16 +40,14 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestParam Long userId,@RequestParam String accessToken) {
-        authService.logout(userId, accessToken);
+    public ResponseEntity<Void> logout(@RequestParam String token) {
+        authService.logout(token);
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/current-user")
-    public ResponseEntity<UserDTO> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        UserDTO userDTO = authService.getUserByUsername(username);
-        return ResponseEntity.ok(userDTO);
+    @GetMapping("/info")
+    public ResponseEntity<AuthResponse> getUserInfo(@RequestParam String token) {
+        AuthResponse response = authService.getUserInfo(token);
+        return ResponseEntity.ok(response);
     }
 }
