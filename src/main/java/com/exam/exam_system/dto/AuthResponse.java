@@ -21,10 +21,11 @@ public class AuthResponse {
         private Long expiresIn;
     }
 
-    public AuthResponse(Integer code, String token) {
+    public AuthResponse(Integer code, Long userId, String token, String username, String role, String avatar) {
         this.code = code;
-        this.data = new Data(null, null, null, null, token, null, null);
+        this.data = new Data(userId, username, role, avatar, token, null, null);
     }
+
 
     public AuthResponse(Integer code, Long userId, String username, String role, String avatar, String token, String refreshToken, Long expiresIn) {
         this.code = code;

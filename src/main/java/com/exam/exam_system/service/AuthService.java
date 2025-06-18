@@ -73,7 +73,7 @@ public class AuthService {
 
             String token = tokenProvider.generateToken(user);
 
-            return new AuthResponse(20000, token);
+            return new AuthResponse(20000,  user.getId(), token, user.getUsername(), user.getRole(), user.getAvatar());
         } catch (BadCredentialsException ex) {
             throw new RuntimeException("用户名或密码错误");
         }
@@ -91,7 +91,7 @@ public class AuthService {
         // 生成新的访问令牌
         String token = tokenProvider.generateToken(user);
 
-        return new AuthResponse(20000, token);
+        return new AuthResponse(20000, user.getId(), token, user.getUsername(), user.getRole(), user.getAvatar());
     }
 
     public AuthResponse getUserInfo(String token) {
