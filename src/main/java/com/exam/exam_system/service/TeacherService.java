@@ -41,26 +41,6 @@ public class TeacherService {
         this.userRepository = userRepository;
     }
 
-    public List<ExamDTO> getTeacherExams() {
-        // 获取当前登录教师ID (需要结合Spring Security)
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String teacherName = authentication.getName();
-
-        return examRepository.findByTeacherName(teacherName).stream()
-                .map(ExamDTO::new)
-                .collect(Collectors.toList());
-    }
-
-    public List<HomeworkDTO> getTeacherHomeworks() {
-        // 获取当前登录教师ID
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String teacherName = authentication.getName();
-
-        return homeworkRepository.findByTeacherName(teacherName).stream()
-                .map(HomeworkDTO::new)
-                .collect(Collectors.toList());
-    }
-
     @Transactional
     public ExamDTO createExam(ExamCreateRequest request) {
         Exam exam = new Exam();

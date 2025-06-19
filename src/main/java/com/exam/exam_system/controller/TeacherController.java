@@ -23,20 +23,6 @@ public class TeacherController {
         this.teacherService = teacherService;
     }
 
-    // 获取教师创建的考试列表
-    @GetMapping("/exams")
-    public ResponseEntity<List<ExamDTO>> getTeacherExams() {
-        List<ExamDTO> exams = teacherService.getTeacherExams();
-        return ResponseEntity.ok(exams);
-    }
-
-    // 获取教师创建的作业列表
-    @GetMapping("/homeworks")
-    public ResponseEntity<List<HomeworkDTO>> getTeacherHomeworks() {
-        List<HomeworkDTO> homeworks = teacherService.getTeacherHomeworks();
-        return ResponseEntity.ok(homeworks);
-    }
-
     @PostMapping("/exams")
     public ResponseEntity<ExamDTO> createExam(@RequestBody ExamCreateRequest request) {
         ExamDTO exam = teacherService.createExam(request);
