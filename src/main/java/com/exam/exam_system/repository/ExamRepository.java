@@ -41,6 +41,10 @@ public interface ExamRepository extends JpaRepository<Exam, Long>{
     @Query("SELECT e FROM Exam e WHERE e.id IN :ids")
     List<Exam> findByIds(@Param("ids") Set<Long> ids);
 
+    // 获取相应教师的考试
+    @Query("SELECT e FROM Exam e WHERE e.teacher.username = :teacherName")
+    List<Exam> findByTeacherName(@Param("teacherName") String teacherName);
+
     // 获取指定科目的考试
     @Query("SELECT e FROM Exam e WHERE e.subject = :subject")
     List<Exam> findSubject(@Param("subject") String subject);

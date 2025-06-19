@@ -7,6 +7,8 @@ import com.exam.exam_system.repository.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,26 @@ public class TeacherService {
         this.scoreRepository = scoreRepository;
         this.answerRecordRepository = answerRecordRepository;
         this.userRepository = userRepository;
+    }
+
+    public List<ExamDTO> getTeacherExams() {
+        // 获取当前登录教师ID (需要结合Spring Security)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String teacherName = authentication.getName();
+
+        return examRepository.findByTeacherName(teacherName).stream()
+                .map(ExamDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<HomeworkDTO> getTeacherHomeworks() {
+        // 获取当前登录教师ID
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String teacherName = authentication.getName();
+
+        return homeworkRepository.findByTeacherName(teacherName).stream()
+                .map(HomeworkDTO::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional

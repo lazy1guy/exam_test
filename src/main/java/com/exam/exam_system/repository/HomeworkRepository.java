@@ -44,6 +44,10 @@ public interface HomeworkRepository extends JpaRepository<Homework, Long> {
     @Query("SELECT h FROM Homework h WHERE h.id IN :ids")
     List<Homework> findByIds(@Param("ids") Set<Long> ids);
 
+    // 获取相应教师的考试
+    @Query("SELECT h FROM Homework h WHERE h.teacher.username = :teacherName")
+    List<Homework> findByTeacherName(@Param("teacherName") String teacherName);
+
     @Modifying
     @Transactional
     @Query("UPDATE Homework h SET h.teacher = NULL WHERE h.teacher.id = :teacherId")
