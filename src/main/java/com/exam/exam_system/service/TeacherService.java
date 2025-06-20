@@ -73,6 +73,7 @@ public class TeacherService {
             entity.setScore(q.getScore());
             entity.setType(q.getType());
             entity.setExam(savedExam);
+            entity.setSubject(q.getSubject());
             questionEntities.add(questionRepository.save(entity));
         }
         savedExam.setQuestions(questionEntities);
@@ -108,6 +109,7 @@ public class TeacherService {
             entity.setScore(q.getScore());
             entity.setType(q.getType());
             entity.setHomework(savedHomework);
+            entity.setSubject(q.getSubject());
             questionEntities.add(questionRepository.save(entity));
         }
         savedHomework.setQuestions(questionEntities);
