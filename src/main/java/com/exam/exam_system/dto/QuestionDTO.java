@@ -17,6 +17,7 @@ public class QuestionDTO implements Serializable {
     private Integer score;
     private String subject;
     private String answer;
+    private String draftAnswer; // 草稿答案
 
     public QuestionDTO(Question question) {
         this.id = question.getId();
@@ -33,4 +34,8 @@ public class QuestionDTO implements Serializable {
     }
 
     public QuestionDTO() {}
+
+    public void setDraftAnswer(String s) {
+        this.draftAnswer = s;
+    }
 }

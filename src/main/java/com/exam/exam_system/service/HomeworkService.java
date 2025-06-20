@@ -111,8 +111,24 @@ public class HomeworkService {
         // 转换为安全DTO
         HomeworkDTO homeworkDTO = new HomeworkDTO(homework);
         List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
+
+        // 获取已保存的草稿答案
+        List<AnswerRecord> draftAnswers = answerRecordRepository.findDraftByStudentAndHomework(studentId, homeworkId);
+        Map<Long, String> draftAnswerMap = draftAnswers.stream()
+                .collect(Collectors.toMap(
+                        ar -> ar.getQuestion().getId(),
+                        AnswerRecord::getAnswer
+                ));
+
         List<QuestionDTO> questionDTOs = questions.stream()
-                .map(QuestionDTO::new)
+                .map(question -> {
+                    QuestionDTO dto = new QuestionDTO(question);
+                    // 如果存在草稿答案，设置到DTO中
+                    if (draftAnswerMap.containsKey(question.getId())) {
+                        dto.setDraftAnswer(draftAnswerMap.get(question.getId()));
+                    }
+                    return dto;
+                })
                 .collect(Collectors.toList());
 
         HomeworkPaper paper = new HomeworkPaper();
@@ -273,11 +289,19 @@ public class HomeworkService {
         // 删除旧草稿
         answerRecordRepository.deleteDraftByStudentAndHomework(studentId, homeworkId);
 
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("学生不存在"));
+
+        Homework h = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new RuntimeException("作业不存在"));
+
         for(Answer answer : answers){
+            Question q = questionRepository.findById(answer.getQuestionId())
+                    .orElseThrow(() -> new RuntimeException("问题不存在"));
             AnswerRecord record = new AnswerRecord();
-            record.setStudent(new User(studentId));
-            record.setQuestion(new Question(answer.getQuestionId()));
-            record.setHomework(new Homework(homeworkId));
+            record.setStudent(student);
+            record.setQuestion(q);
+            record.setHomework(h);
             record.setAnswer(answer.getAnswer());
             record.setIsDraft(true);
             record.setIsCorrect(null);

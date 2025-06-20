@@ -7,6 +7,8 @@ import com.exam.exam_system.repository.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class TeacherService {
+    private static final Logger log = LoggerFactory.getLogger(ExamService.class);
 
     private final ExamRepository examRepository;
     private final HomeworkRepository homeworkRepository;
@@ -167,11 +170,17 @@ public class TeacherService {
 
         // 计算统计信息
         double avgScore = calculateAverageScore(scores);
+        log.info("计算平均分");
         double completionRate = calculateCompletionRate(scores);
+        log.info("计算完成率");
         int maxScore = calculateMaxScore(scores);
+        log.info("计算最高分");
         int minScore = calculateMinScore(scores);
+        log.info("计算最低分");
         Map<Long, Double> questionAvgScores = calculateQuestionAvgScores(scores, homework.getQuestions(), homeworkId, "homework");
+        log.info("计算每题得分");
         Map<String, Long> scoreDistribution = calculateScoreDistribution(scores);
+        log.info("计算分数分布");
 
         results.setAvgScore(avgScore);
         results.setCompletionRate(completionRate);
@@ -250,7 +259,7 @@ public class TeacherService {
         if ("exam".equals(type)) {
             answerRecords = answerRecordRepository.findByExamId(examOrHomeworkId);
         } else {
-            answerRecords = answerRecordRepository.findByHomeworkId(examOrHomeworkId);
+            answerRecords = answerRecordRepository.findByHomeworkIdAndIsDraftFalse(examOrHomeworkId);
         }
 
         // 构建问题 ID 和平均分的映射
