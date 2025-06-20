@@ -50,7 +50,7 @@ public class ErrorBookController {
     @PostMapping("/{questionId}/note")
     public ResponseEntity<Void> addErrorNote(@PathVariable Long questionId,
                                              @RequestParam Long userId,
-                                             @RequestBody String note) {
+                                             @RequestParam String note) {
         errorBookService.addErrorNote(questionId, userId, note);
         return ResponseEntity.ok().build();
     }
