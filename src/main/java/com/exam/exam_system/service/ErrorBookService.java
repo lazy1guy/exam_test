@@ -119,13 +119,19 @@ public class ErrorBookService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        // 获取所有未掌握的错题
-        List<AnswerRecord> errors = answerRecordRepository.findByStudentIdAndIsCorrectFalseAndMasteredFalse(userId);
+        // 获取所有未掌握的错题，确保question不为null
+        List<AnswerRecord> errors = answerRecordRepository.findByStudentIdAndIsCorrectFalseAndMasteredFalse(userId).stream()
+                .filter(ar -> ar.getQuestion() != null && ar.getQuestion().getSubject() != null)
+                .collect(Collectors.toList());
 
-        // 按科目分组
+        // 按科目分组，添加空值检查
         Map<String, List<AnswerRecord>> errorsBySubject = errors.stream()
                 .collect(Collectors.groupingBy(
-                        ar -> ar.getQuestion().getSubject()
+                        ar -> {
+                            Question question = ar.getQuestion();
+                            return question != null ? question.getSubject() : "未知科目";
+                        },
+                        Collectors.toList()
                 ));
 
         // 为每个科目随机选择题目
@@ -133,7 +139,6 @@ public class ErrorBookService {
         int subjectCount = errorsBySubject.size();
 
         if (subjectCount == 0) {
-            // 如果没有错题，返回空试卷
             return new PracticePaper();
         }
 
@@ -143,10 +148,10 @@ public class ErrorBookService {
             String subject = entry.getKey();
             List<Long> questionIds = entry.getValue().stream()
                     .map(ar -> ar.getQuestion().getId())
+                    .filter(Objects::nonNull)
                     .distinct()
                     .collect(Collectors.toList());
 
-            // 随机选择题目
             Collections.shuffle(questionIds);
             List<Long> selectedIds = questionIds.stream()
                     .limit(perSubjectCount)
@@ -163,13 +168,9 @@ public class ErrorBookService {
             practiceQuestions.addAll(getRandomQuestions(needed));
         }
 
-        // 如果题目过多，截取所需数量
-        if (practiceQuestions.size() > count) {
-            practiceQuestions = practiceQuestions.subList(0, count);
-        }
-
         // 转换为安全DTO
         List<QuestionDTO> questionDTOs = practiceQuestions.stream()
+                .filter(Objects::nonNull)
                 .map(QuestionDTO::new)
                 .collect(Collectors.toList());
 
