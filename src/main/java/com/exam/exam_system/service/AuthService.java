@@ -1,5 +1,6 @@
 package com.exam.exam_system.service;
 
+import com.exam.exam_system.dto.RegisterRequest;
 import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.User;
 import com.exam.exam_system.dto.AuthResponse;
@@ -40,22 +41,31 @@ public class AuthService {
     }
 
     @Transactional
-    public UserDTO register(User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
+    public UserDTO register(RegisterRequest request) {
+        // 验证用户名是否已存在
+        if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("用户名已存在");
         }
-        if (userRepository.existsByEmail(user.getEmail())) {
+
+        // 验证邮箱是否已注册
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("邮箱已注册");
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // 创建新用户
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setRole(request.getRole());
+        user.setAvatar("/avatars/default_avatar.png"); // 设置默认头像
+
         User savedUser = userRepository.save(user);
-        UserDTO userDTO = new UserDTO(savedUser);
 
         // 发送欢迎通知
         notificationService.sendWelcomeNotification(savedUser);
 
-        return userDTO;
+        return new UserDTO(savedUser);
     }
 
     @CacheEvict(value = {"homeworkListCache","homeworkDetailCache", "homeDataCache", "examListCache","examDetailCache"}, allEntries = true)

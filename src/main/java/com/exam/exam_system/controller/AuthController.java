@@ -1,11 +1,13 @@
 // 认证控制器
 package com.exam.exam_system.controller;
 
+import com.exam.exam_system.dto.RegisterRequest;
 import com.exam.exam_system.dto.UserDTO;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.dto.AuthResponse;
 import com.exam.exam_system.dto.LoginRequest;
 import com.exam.exam_system.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,12 +28,11 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            UserDTO registeredUser = authService.register(user);
+            UserDTO registeredUser = authService.register(request);
             return ResponseEntity.ok(registeredUser);
-        }  catch (RuntimeException e) {
-            // 返回更详细的错误信息
+        } catch (RuntimeException e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
             errorResponse.put("message", e.getMessage());
