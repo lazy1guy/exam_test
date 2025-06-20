@@ -9,6 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/profile")
 public class ProfileController {
@@ -38,8 +45,11 @@ public class ProfileController {
     }
 
     @PostMapping("/avatar")
-    public ResponseEntity<String> uploadAvatar(@RequestParam Long userId,
-                                               @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam Long userId) throws IOException {
+
+        // 调用Service层方法，会自动处理文件保存和用户记录更新
         String avatarUrl = profileService.uploadAvatar(userId, file);
         return ResponseEntity.ok(avatarUrl);
     }

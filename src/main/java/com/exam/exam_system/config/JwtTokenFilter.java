@@ -31,6 +31,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     // 使用 Ant 风格路径匹配
     private static final List<String> PUBLIC_PATHS = List.of(
+            "/avatars/**",
+            "/avatar-files/**",
             "/api/auth/register",
             "/api/auth/login",
             "/api/homeworks/active",

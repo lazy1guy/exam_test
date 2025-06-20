@@ -1,5 +1,6 @@
 package com.exam.exam_system.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 @Data

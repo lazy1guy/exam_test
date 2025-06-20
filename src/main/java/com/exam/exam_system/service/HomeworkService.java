@@ -4,6 +4,7 @@ package com.exam.exam_system.service;
 import com.exam.exam_system.dto.*;
 import com.exam.exam_system.entity.*;
 import com.exam.exam_system.repository.*;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -116,11 +118,13 @@ public class HomeworkService {
         HomeworkPaper paper = new HomeworkPaper();
         paper.setHomework(homeworkDTO);
         paper.setQuestions(questionDTOs);
+        paper.setRemainingTime(getTimeRemaining(homeworkId, studentId));
 
         return paper;
     }
 
     @Transactional
+    @CacheEvict(value = {"homeworkListCache","homeworkDetailCache", "homeDataCache"}, allEntries = true)
     public void submitHomeworkAnswers(Long homeworkId, Long studentId, List<Answer> answers) {
         String submitKey = "homework:submit:" + homeworkId + ":" + studentId;
         Boolean canSubmit = redisTemplate.opsForValue().setIfAbsent(submitKey, "processing", 5, TimeUnit.MINUTES);
@@ -283,11 +287,29 @@ public class HomeworkService {
         }
     }
 
+    public long getTimeRemaining(Long homeworkId, Long studentId) {
+        Homework homework = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new RuntimeException("考试不存在"));
+
+        // 检查是否已提交
+        Optional<Score> score = scoreRepository.findByStudentAndExam(studentId, homeworkId);
+        if (score.isPresent()) {
+            return 0; // 已提交，剩余时间为0
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(homework.getDeadline())) {
+            return 0;
+        }
+
+        return Duration.between(now, homework.getDeadline()).getSeconds();
+    }
+
     private boolean isAutoGradeQuestion(String type) {
-        return "SINGLE_CHOICE".equals(type) ||
-                "MULTIPLE_CHOICE".equals(type) ||
-                "TRUE_FALSE".equals(type) ||
-                "SHORT_ANSWER".equals(type);
+        return "single".equals(type) ||
+                "multiple".equals(type) ||
+                "judge".equals(type) ||
+                "short".equals(type);
     }
 
     private User getCurrentUser() {

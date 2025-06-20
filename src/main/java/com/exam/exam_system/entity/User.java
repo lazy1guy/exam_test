@@ -55,7 +55,7 @@ public class User implements UserDetails, Serializable
     private String role;    // TEACHER、STUDENT、ADMIN
 
     @Column(nullable = false)
-    private String avatar = "/images/default_avatar.png";
+    private String avatar = "/avatars/default_avatar.png";
 
     @Column(nullable = false)
     private String email;

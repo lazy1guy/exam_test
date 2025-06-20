@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
@@ -81,29 +82,32 @@ public class ProfileService {
         }
 
         try {
-            // 获取上传目录
-            String uploadDir = fileUploadProperties.getUploadDir();
+            // 1. 获取基础上传目录并确保avatars子目录存在
+            String baseUploadDir = fileUploadProperties.getUploadDir(); // 获取配置的根目录，如 "upload-dir/"
+            String avatarsDir = baseUploadDir + "/avatars/"; // 完整的avatars子目录路径
 
-            // 生成唯一文件名
+            // 创建avatars子目录（如果不存在）
+            Files.createDirectories(Paths.get(avatarsDir));
+
+            // 2. 生成唯一文件名（保留原始文件扩展名）
             String originalFilename = file.getOriginalFilename();
-            String fileExtension = null;
-            if (originalFilename != null) {
-                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            String fileExtension = originalFilename != null ?
+                    originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
             String newFilename = UUID.randomUUID() + fileExtension;
 
-            // 保存文件
-            Path path = Paths.get(uploadDir + newFilename);
-            Files.copy(file.getInputStream(), path);
+            // 3. 保存文件到指定目录（完整路径：upload-dir/avatars/filename）
+            Path filePath = Paths.get(avatarsDir + newFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 更新用户头像URL
+            // 4. 更新用户头像URL（与WebConfig映射保持一致）
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-            user.setAvatarUrl("/avatars/" + newFilename);
+            String avatarUrl = "/avatars/" + newFilename; // 注意：这里使用WebConfig中配置的URL前缀
+            user.setAvatarUrl(avatarUrl);
             userRepository.save(user);
 
-            return user.getAvatarUrl();
+            return avatarUrl;
         } catch (IOException e) {
             throw new RuntimeException("上传失败", e);
         }
@@ -131,7 +135,8 @@ public class ProfileService {
         profile.setEmail(user.getEmail());
         profile.setPhone(user.getPhone());
         profile.setRole(user.getRole());
-        profile.setAvatarUrl(user.getAvatarUrl());
+        profile.setAvatarUrl(user.getAvatar() != null ?
+                user.getAvatar() : "/avatars/default_avatar.png");
         return profile;
     }
 }

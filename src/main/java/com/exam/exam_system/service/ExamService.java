@@ -7,6 +7,9 @@ import com.exam.exam_system.repository.AnswerRecordRepository;
 import com.exam.exam_system.repository.ExamRepository;
 import com.exam.exam_system.repository.QuestionRepository;
 import com.exam.exam_system.repository.ScoreRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +40,7 @@ public class ExamService {
     private final ScoreRepository scoreRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final CacheManager cacheManager;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ExamService(UserRepository userRepository, ExamRepository examRepository, QuestionRepository questionRepository,
                        AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository,
@@ -134,6 +138,7 @@ public class ExamService {
     }
 
     @Transactional
+    @CacheEvict(value = {"examListCache","examDetailCache", "homeDataCache"}, allEntries = true)
     public void submitExamAnswers(Long examId, Long studentId, List<Answer> answers) {
         // 幂等性检查
         String submitKey = "exam:submit:" + examId + ":" + studentId;
@@ -176,7 +181,17 @@ public class ExamService {
 
                 // 自动批改客观题
                 if (isAutoGradeQuestion(question.getType())) {
-                    boolean isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
+                    boolean isCorrect;
+                    // 特殊处理多选题（需忽略顺序）
+                    if ("multiple".equals(question.getType())) {
+                        // 解析JSON数组为Set（自动去重且忽略顺序）
+                        Set<String> correctAnswers = parseJsonToSet(question.getAnswer());
+                        Set<String> studentAnswers = parseJsonToSet(answer.getAnswer());
+                        isCorrect = correctAnswers.equals(studentAnswers);
+                    } else {
+                        // 其他题型直接比较字符串
+                        isCorrect = question.getAnswer().equalsIgnoreCase(answer.getAnswer());
+                    }
                     record.setIsCorrect(isCorrect);
                     record.setScore(isCorrect ? question.getScore() : 0);
                     record.setMastered(isCorrect);
@@ -292,10 +307,10 @@ public class ExamService {
     }
 
     private boolean isAutoGradeQuestion(String type) {
-        return "SINGLE_CHOICE".equals(type) ||
-                "MULTIPLE_CHOICE".equals(type) ||
-                "TRUE_FALSE".equals(type) ||
-                "SHORT_ANSWER".equals(type);
+        return "single".equals(type) ||
+                "multiple".equals(type) ||
+                "judge".equals(type) ||
+                "short".equals(type);
     }
 
     private User getCurrentUser() {
@@ -303,5 +318,14 @@ public class ExamService {
         String username = authentication.getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
+    }
+
+    private Set<String> parseJsonToSet(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<Set<String>>() {});
+        } catch (Exception e) {
+            log.error("解析JSON失败: {}", json, e);
+            return Collections.emptySet();
+        }
     }
 }

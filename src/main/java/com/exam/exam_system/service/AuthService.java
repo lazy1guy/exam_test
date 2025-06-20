@@ -6,6 +6,7 @@ import com.exam.exam_system.dto.AuthResponse;
 import com.exam.exam_system.dto.LoginRequest;
 import com.exam.exam_system.util.JwtTokenProvider;
 import com.exam.exam_system.repository.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -57,6 +58,7 @@ public class AuthService {
         return userDTO;
     }
 
+    @CacheEvict(value = {"homeworkListCache","homeworkDetailCache", "homeDataCache", "examListCache","examDetailCache"}, allEntries = true)
     public AuthResponse login(LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(

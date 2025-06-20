@@ -91,6 +91,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 放行 OPTIONS 请求
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/avatars/**").permitAll() // 允许无认证访问头像
+                        .requestMatchers("/avatar-files/**").permitAll() // 放行头像路径
 
                         // 公开访问的路径
                         .requestMatchers("/api/auth/register").permitAll()
@@ -101,7 +103,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/home/**").permitAll()
 
                         // 角色访问控制
-                        .requestMatchers("/api/auth/current-user").authenticated() // 确保需要认证
+                        .requestMatchers("/api/auth/info").authenticated() // 确保需要认证
                         .requestMatchers("/api/homeworks/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")
                         .requestMatchers("/api/exams/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")
                         .requestMatchers("/api/scores/**").hasAnyRole("TEACHER", "STUDENT","ADMIN")

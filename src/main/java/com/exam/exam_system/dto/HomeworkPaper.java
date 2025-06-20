@@ -10,4 +10,5 @@ import java.util.List;
 public class HomeworkPaper {
     private HomeworkDTO homework;
     private List<QuestionDTO> questions;
+    private long remainingTime;
 }

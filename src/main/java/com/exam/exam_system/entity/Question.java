@@ -36,7 +36,7 @@ public class Question implements Serializable
     private String content;
 
     @Column(nullable = false)
-    private String type; // SINGLE_CHOICE, MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER
+    private String type; // single, multiple, short, judge
 
     @Column(columnDefinition = "TEXT")
     private String options; // JSON格式存储选项

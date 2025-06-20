@@ -7,8 +7,7 @@ import com.exam.exam_system.repository.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +41,7 @@ public class TeacherService {
     }
 
     @Transactional
+    @CacheEvict(value = {"examListCache","examDetailCache", "homeDataCache"}, allEntries = true)
     public ExamDTO createExam(ExamCreateRequest request) {
         Exam exam = new Exam();
         exam.setTitle(request.getTitle());
@@ -59,10 +59,9 @@ public class TeacherService {
                 .mapToInt(QuestionDTO::getScore)
                 .sum();
         exam.setTotalScore(totalScore);
-
         Exam savedExam = examRepository.save(exam);
-
         // 保存题目
+        List<Question> questionEntities = new ArrayList<>();
         for (QuestionDTO q : request.getQuestions()) {
             Question entity = new Question();
             entity.setContent(q.getContent());
@@ -71,15 +70,15 @@ public class TeacherService {
             entity.setScore(q.getScore());
             entity.setType(q.getType());
             entity.setExam(savedExam);
-            questionRepository.save(entity);
+            questionEntities.add(questionRepository.save(entity));
         }
-
-        ExamDTO exam_dto = new ExamDTO(savedExam);
-
-        return exam_dto;
+        savedExam.setQuestions(questionEntities);
+        savedExam = examRepository.save(savedExam);
+        return new ExamDTO(savedExam);
     }
 
     @Transactional
+    @CacheEvict(value = {"homeworkListCache","homeworkDetailCache", "homeDataCache"}, allEntries = true)
     public HomeworkDTO createHomework(HomeworkCreateRequest request) {
         Homework homework = new Homework();
         homework.setTitle(request.getTitle());
@@ -95,10 +94,9 @@ public class TeacherService {
                 .mapToInt(QuestionDTO::getScore)
                 .sum();
         homework.setTotalScore(totalScore);
-
         Homework savedHomework = homeworkRepository.save(homework);
-
         // 保存题目
+        List<Question> questionEntities = new ArrayList<>();
         for (QuestionDTO q : request.getQuestions()) {
             Question entity = new Question();
             entity.setContent(q.getContent());
@@ -107,11 +105,10 @@ public class TeacherService {
             entity.setScore(q.getScore());
             entity.setType(q.getType());
             entity.setHomework(savedHomework);
-            questionRepository.save(entity);
+            questionEntities.add(questionRepository.save(entity));
         }
-
-
-
+        savedHomework.setQuestions(questionEntities);
+        savedHomework = homeworkRepository.save(savedHomework);
         return new HomeworkDTO(savedHomework);
     }
 
@@ -146,7 +143,7 @@ public class TeacherService {
                 .map(s -> {
                     StudentScore ss = new StudentScore();
                     ss.setStudentId(s.getStudent().getId());
-                    ss.setStudentName(s.getStudent().getFullName());
+                    ss.setStudentName(s.getStudent().getUsername());
                     ss.setScore(s.getScore());
                     ss.setTotalScore(s.getTotalScore());
                     return ss;
@@ -188,7 +185,7 @@ public class TeacherService {
                 .map(s -> {
                     StudentScore ss = new StudentScore();
                     ss.setStudentId(s.getStudent().getId());
-                    ss.setStudentName(s.getStudent().getFullName());
+                    ss.setStudentName(s.getStudent().getUsername());
                     ss.setScore(s.getScore());
                     ss.setTotalScore(s.getTotalScore());
                     ss.setStatus(s.getStatus());
@@ -346,34 +343,34 @@ public class TeacherService {
     }
 
 
-    @Transactional
-    public void gradeHomework(Long homeworkId, Long studentId, List<SubjectiveGrading> gradings) {
-        for (SubjectiveGrading grading : gradings) {
-            // 更新答题记录
-            List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndQuestionId(studentId, grading.getQuestionId());
-            if (!records.isEmpty()) {
-                AnswerRecord record = records.get(0);
-                record.setScore(grading.getScore());
-                record.setIsCorrect(grading.getScore() > 0);
-                answerRecordRepository.save(record);
-            }
-        }
-
-        // 重新计算总分
-        List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndHomeworkId(studentId, homeworkId);
-        int totalScore = records.stream()
-                .filter(r -> r.getScore() != null)
-                .mapToInt(AnswerRecord::getScore)
-                .sum();
-
-        // 更新成绩
-        scoreRepository.findByStudentAndHomework(studentId, homeworkId)
-                .ifPresent(score -> {
-                    score.setScore(totalScore);
-                    score.setStatus("COMPLETED");
-                    scoreRepository.save(score);
-                });
-    }
+//    @Transactional
+//    public void gradeHomework(Long homeworkId, Long studentId, List<SubjectiveGrading> gradings) {
+//        for (SubjectiveGrading grading : gradings) {
+//            // 更新答题记录
+//            List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndQuestionId(studentId, grading.getQuestionId());
+//            if (!records.isEmpty()) {
+//                AnswerRecord record = records.get(0);
+//                record.setScore(grading.getScore());
+//                record.setIsCorrect(grading.getScore() > 0);
+//                answerRecordRepository.save(record);
+//            }
+//        }
+//
+//        // 重新计算总分
+//        List<AnswerRecord> records = answerRecordRepository.findByStudentIdAndHomeworkId(studentId, homeworkId);
+//        int totalScore = records.stream()
+//                .filter(r -> r.getScore() != null)
+//                .mapToInt(AnswerRecord::getScore)
+//                .sum();
+//
+//        // 更新成绩
+//        scoreRepository.findByStudentAndHomework(studentId, homeworkId)
+//                .ifPresent(score -> {
+//                    score.setScore(totalScore);
+//                    score.setStatus("COMPLETED");
+//                    scoreRepository.save(score);
+//                });
+//    }
 
     public void publishExamResults(Long examId) {
         Exam exam = examRepository.findById(examId)
@@ -383,10 +380,15 @@ public class TeacherService {
     }
 
     @Transactional
+    @CacheEvict(value = {"examListCache","examDetailCache", "homeDataCache"}, allEntries = true)
     public void deleteExam(Long examId) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new RuntimeException("考试不存在"));
 
+        List<Question> questions = questionRepository.findByExamId(examId);
+        for (Question question : questions) {
+            answerRecordRepository.deleteByQuestionId(question.getId());
+        }
         // 修改相关联试题的考试信息
         questionRepository.deleteByExamId(examId);
 
@@ -398,9 +400,15 @@ public class TeacherService {
     }
 
     @Transactional
+    @CacheEvict(value = {"homeworkListCache","homeworkDetailCache", "homeDataCache"}, allEntries = true)
     public void deleteHomework(Long homeworkId) {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new RuntimeException("作业不存在"));
+
+        List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
+        for (Question question : questions) {
+            answerRecordRepository.deleteByQuestionId(question.getId());
+        }
 
         // 修改相关联试题的作业信息
         questionRepository.deleteByHomeworkId(homeworkId);

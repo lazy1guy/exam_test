@@ -70,7 +70,8 @@ public class Exam implements Serializable
     @Column(nullable = false)
     private Integer totalScore;
 
-    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true
+    )
     private List<Question> questions;
 
     @Column(updatable = false)

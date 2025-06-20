@@ -1,14 +1,14 @@
 package com.exam.exam_system.controller;
 
-import com.exam.exam_system.dto.Answer;
-import com.exam.exam_system.dto.HomeworkDTO;
-import com.exam.exam_system.dto.HomeworkPaper;
-import com.exam.exam_system.dto.HomeworkDetail;
+import com.exam.exam_system.dto.*;
 import com.exam.exam_system.service.HomeworkService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/homeworks")
@@ -32,10 +32,18 @@ public class HomeworkController {
     }
 
     @GetMapping("/{homeworkId}/start")
-    public ResponseEntity<HomeworkPaper> startHomework(@PathVariable Long homeworkId,
+    public ResponseEntity<?> startHomework(@PathVariable Long homeworkId,
                                                        @RequestParam Long studentId) {
-        HomeworkPaper paper = homeworkService.startHomework(homeworkId, studentId);
-        return ResponseEntity.ok(paper);
+        try {
+            HomeworkPaper paper = homeworkService.startHomework(homeworkId, studentId);
+            return ResponseEntity.ok(paper);
+        } catch (RuntimeException e) {
+            // 返回更详细的错误信息
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
     }
 
     @PostMapping("/{homeworkId}/submit")

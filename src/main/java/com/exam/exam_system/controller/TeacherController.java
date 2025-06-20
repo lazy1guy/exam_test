@@ -76,13 +76,13 @@ public class TeacherController {
     }
 
 
-    @PostMapping("/homeworks/{homeworkId}/grade")
-    public ResponseEntity<Void> gradeHomework(@PathVariable Long homeworkId,
-                                              @RequestParam Long studentId,
-                                              @RequestBody List<SubjectiveGrading> gradings) {
-        teacherService.gradeHomework(homeworkId, studentId, gradings);
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping("/homeworks/{homeworkId}/grade")
+//    public ResponseEntity<Void> gradeHomework(@PathVariable Long homeworkId,
+//                                              @RequestParam Long studentId,
+//                                              @RequestBody List<SubjectiveGrading> gradings) {
+//        teacherService.gradeHomework(homeworkId, studentId, gradings);
+//        return ResponseEntity.ok().build();
+//    }
 
     @PostMapping("/exams/{examId}/publish")
     public ResponseEntity<Void> publishExamResults(@PathVariable Long examId) {

@@ -21,27 +21,25 @@ public class CacheConfig {
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        // 首页数据缓存1小时
+        // 首页数据缓存2分钟
         cacheConfigurations.put("homeDataCache", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)));
+                .entryTtl(Duration.ofMinutes(2)));
 
-        // 成绩数据缓存30分钟
-        cacheConfigurations.put("scoreSummaryCache", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(30)));
+        // 考试列表缓存：30秒（高频访问但需及时更新）
+        cacheConfigurations.put("examListCache", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofSeconds(30)));
 
-        // 考试详情缓存2小时（较少变化）
+        // 考试详情缓存：2分钟（低频修改但需保证一致性）
         cacheConfigurations.put("examDetailCache", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(2)));
+                .entryTtl(Duration.ofMinutes(2))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new GenericJackson2JsonRedisSerializer())));
 
-        // 通知缓存特殊配置（15分钟）
-        cacheConfigurations.put("unreadNotifications", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(15))
-                .disableCachingNullValues());
 
         return RedisCacheManager.builder(connectionFactory)
                 .withInitialCacheConfigurations(cacheConfigurations)
                 .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()
-                        .entryTtl(Duration.ofMinutes(10)) // 默认配置
+                        .entryTtl(Duration.ofMinutes(5)) // 默认配置
                         .serializeValuesWith(RedisSerializationContext.SerializationPair
                                 .fromSerializer(new GenericJackson2JsonRedisSerializer())))
                 .transactionAware()
