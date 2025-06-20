@@ -396,18 +396,21 @@ public class TeacherService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new RuntimeException("考试不存在"));
 
-        List<Question> questions = questionRepository.findByExamId(examId);
-        for (Question question : questions) {
-            answerRecordRepository.deleteByQuestionId(question.getId());
-        }
-        // 修改相关联试题的考试信息
+        // 1. 先删除所有相关的答题记录
+        answerRecordRepository.deleteByExamId(examId);
+        log.info("删除答题记录");
+
+        // 2. 删除所有相关问题
         questionRepository.deleteByExamId(examId);
+        log.info("删除试题");
 
-        // 删除相关联的成绩
+        // 3. 删除所有相关成绩
         scoreRepository.deleteByExamId(examId);
+        log.info("删除成绩");
 
-        // 删除考试本身
+        // 4. 最后删除考试本身
         examRepository.delete(exam);
+        log.info("删除考试");
     }
 
     @Transactional
@@ -416,18 +419,20 @@ public class TeacherService {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new RuntimeException("作业不存在"));
 
-        List<Question> questions = questionRepository.findByHomeworkId(homeworkId);
-        for (Question question : questions) {
-            answerRecordRepository.deleteByQuestionId(question.getId());
-        }
+        // 1. 先删除所有相关的答题记录
+        answerRecordRepository.deleteByHomeworkId(homeworkId);
+        log.info("删除答题记录");
 
-        // 修改相关联试题的作业信息
+        // 2. 删除所有相关问题
         questionRepository.deleteByHomeworkId(homeworkId);
+        log.info("删除试题");
 
-        // 删除相关联的成绩
+        // 3. 删除所有相关成绩
         scoreRepository.deleteByHomeworkId(homeworkId);
+        log.info("删除成绩");
 
-        // 删除作业本身
+        // 4. 最后删除作业本身
         homeworkRepository.delete(homework);
+        log.info("删除作业");
     }
 }
