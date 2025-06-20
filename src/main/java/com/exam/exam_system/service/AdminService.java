@@ -23,15 +23,17 @@ public class AdminService {
     private final ExamRepository examRepository;
     private final HomeworkRepository homeworkRepository;
     private final AnswerRecordRepository answerRecordRepository;
+    private final QuestionRepository questionRepository;
     private final ScoreRepository scoreRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminService(UserRepository userRepository, ExamRepository examRepository, HomeworkRepository homeworkRepository,
-                        AnswerRecordRepository answerRecordRepository, ScoreRepository scoreRepository, PasswordEncoder passwordEncoder) {
+                        AnswerRecordRepository answerRecordRepository, QuestionRepository questionRepository, ScoreRepository scoreRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
         this.answerRecordRepository = answerRecordRepository;
+        this.questionRepository = questionRepository;
         this.scoreRepository = scoreRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -88,21 +90,37 @@ public class AdminService {
         }
 
         User user = userOptional.get();
-
-        // 根据角色执行不同操作
         String role = user.getRole();
+
         if ("TEACHER".equals(role)) {
-            // 教师：将与该教师关联的所有考试记录的 teacher_id 置为空
-            examRepository.nullifyTeacherIdByUserId(id);
-            homeworkRepository.nullifyTeacherIdByUserId(id);
+            // 1. 先删除该教师创建的所有考试成绩
+            scoreRepository.deleteByExamTeacherId(id);
+
+            // 2. 删除该教师创建的所有作业成绩
+            scoreRepository.deleteByHomeworkTeacherId(id);
+
+            // 3. 删除与教师相关的所有答题记录
+            answerRecordRepository.deleteByExamTeacherId(id);
+            answerRecordRepository.deleteByHomeworkTeacherId(id);
+
+            // 4. 删除教师创建的所有题目
+            questionRepository.deleteByExamTeacherId(id);
+            questionRepository.deleteByHomeworkTeacherId(id);
+
+            // 5. 删除教师创建的所有考试
+            examRepository.deleteByTeacherId(id);
+
+            // 6. 删除教师创建的所有作业
+            homeworkRepository.deleteByTeacherId(id);
         } else if ("STUDENT".equals(role)) {
-            // 学生：删除与其关联的所有答题记录和成绩记录
+            // 1. 先删除答题记录
             answerRecordRepository.deleteByStudentId(id);
+            // 2. 再删除相关成绩
             scoreRepository.deleteByStudentId(id);
         }
 
-        // 删除用户
-        userRepository.deleteUserById(id);
+        // 最后删除用户
+        userRepository.deleteById(id);
     }
 }
 

@@ -64,4 +64,12 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Modifying
     @Query("DELETE FROM Score s WHERE s.homework.id = :homeworkId")
     void deleteByHomeworkId(@Param("homeworkId") Long homeworkId);
+
+    @Modifying
+    @Query("DELETE FROM Score s WHERE s.exam.teacher.id = :id")
+    void deleteByExamTeacherId(@Param("id") Long id);
+
+    @Modifying
+    @Query("DELETE FROM Score s WHERE s.homework.teacher.id = :id")
+    void deleteByHomeworkTeacherId(@Param("id") Long id);
 }

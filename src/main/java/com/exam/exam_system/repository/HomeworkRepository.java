@@ -55,4 +55,8 @@ public interface HomeworkRepository extends JpaRepository<Homework, Long> {
 
     @Query("SELECT h FROM Homework h WHERE h.title = :title")
     Optional<Homework> findByTitle(@Param("title") String title);
+
+    @Modifying
+    @Query("DELETE FROM Homework h WHERE h.teacher.id = :id")
+    void deleteByTeacherId(@Param("id") Long id);
 }

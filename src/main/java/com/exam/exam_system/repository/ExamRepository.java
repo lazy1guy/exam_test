@@ -56,4 +56,8 @@ public interface ExamRepository extends JpaRepository<Exam, Long>{
 
     @Query("SELECT e FROM Exam e WHERE e.title = :title")
     Optional<Exam> findByTitle(@Param("title") String title);
+
+    @Modifying
+    @Query("DELETE FROM Exam e WHERE e.teacher.id = :id")
+    void deleteByTeacherId(@Param("id") Long id);
 }

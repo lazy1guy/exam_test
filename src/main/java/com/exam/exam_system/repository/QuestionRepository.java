@@ -47,4 +47,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("SELECT q FROM Question q WHERE q.content = :content")
     Optional<Question> findByContent(@Param("content") String content);
 
+    @Modifying
+    @Query("DELETE FROM Question q WHERE q.exam.teacher.id = :id")
+    void deleteByExamTeacherId(@Param("id") Long id);
+
+    @Modifying
+    @Query("DELETE FROM Question q WHERE q.homework.teacher.id = :id")
+    void deleteByHomeworkTeacherId(@Param("id") Long id);
 }
