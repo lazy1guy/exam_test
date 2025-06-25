@@ -1,6 +1,7 @@
 package com.exam.exam_system.service;
 
 import com.exam.exam_system.dto.UserDTO;
+import com.exam.exam_system.entity.Notification;
 import com.exam.exam_system.entity.User;
 import com.exam.exam_system.repository.*;
 import jakarta.persistence.criteria.Predicate;
@@ -26,9 +27,11 @@ public class AdminService {
     private final QuestionRepository questionRepository;
     private final ScoreRepository scoreRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationRepository notificationRepository;
 
     public AdminService(UserRepository userRepository, ExamRepository examRepository, HomeworkRepository homeworkRepository,
-                        AnswerRecordRepository answerRecordRepository, QuestionRepository questionRepository, ScoreRepository scoreRepository, PasswordEncoder passwordEncoder) {
+                        AnswerRecordRepository answerRecordRepository, QuestionRepository questionRepository, ScoreRepository scoreRepository,
+                        PasswordEncoder passwordEncoder, NotificationRepository notificationRepository) {
         this.userRepository = userRepository;
         this.examRepository = examRepository;
         this.homeworkRepository = homeworkRepository;
@@ -36,6 +39,7 @@ public class AdminService {
         this.questionRepository = questionRepository;
         this.scoreRepository = scoreRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationRepository = notificationRepository;
     }
 
     // 获取所有用户、外加提供按角色搜索
@@ -92,7 +96,11 @@ public class AdminService {
         User user = userOptional.get();
         String role = user.getRole();
 
+        // 0. 先删除关联通知类
+        notificationRepository.deleteById(id);
+
         if ("TEACHER".equals(role)) {
+
             // 1. 先删除该教师创建的所有考试成绩
             scoreRepository.deleteByExamTeacherId(id);
 
